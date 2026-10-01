@@ -88,6 +88,37 @@ public sealed class TrayIconManager : IDisposable
 
         menu.Items.Add(new ToolStripSeparator());
 
+        // Check for Updates
+        menu.Items.Add(new ToolStripMenuItem("Check for Updates...", null, async (s, e) =>
+        {
+            var update = await Core.Services.UpdateCheckerService.CheckForUpdateAsync();
+            if (update.UpdateAvailable)
+            {
+                var res = MessageBox.Show(
+                    $"A new version ({update.LatestVersion}) of SelectAI is available!\n\nWould you like to open the download page?",
+                    "Update Available",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Information);
+
+                if (res == MessageBoxResult.Yes)
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = update.DownloadUrl,
+                        UseShellExecute = true
+                    });
+                }
+            }
+            else
+            {
+                MessageBox.Show(
+                    $"You are using the latest version of SelectAI ({Core.Services.UpdateCheckerService.CurrentVersion}).",
+                    "SelectAI is Up to Date",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+        }));
+
         // About
         menu.Items.Add(new ToolStripMenuItem("About SelectAI", null, (s, e) => ShowAboutDialog()));
 

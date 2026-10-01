@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "tag": "v1.0.0",
+  "name": "SelectAI v1.0.0",
+  "releaseDate": "2026-10-01",
+  "downloadUrl": "https://github.com/bharath-0814/SelectAI/releases/download/v1.0.0/SelectAI-v1.0.0-win-x64.zip",
+  "changelog": [
+    "Signature freeform circle and trace selection with real-time spline smoothing",
+    "Animated Galaxy AI multi-color glowing neon trail",
+    "Offline Windows Native OCR via Windows.Media.Ocr",
+    "Multimodal Ask AI with Google Gemini and OpenAI GPT-4o",
+    "Google Search and Google Lens in default browser",
+    "Windows DPAPI encrypted credential storage",
+    "PWA Service Worker update system"
+  ]
+}

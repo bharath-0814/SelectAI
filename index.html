@@ -3,21 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SelectAI — The Modern Windows 11 AI Screen Selection Tool</title>
+    <title>SelectAI — Galaxy AI Screen Selection for Windows 11</title>
     <meta name="description" content="A customizable alternative to Samsung Galaxy Book AI Select. Circle or trace anything on screen with a glowing neon tracer, run offline OCR, and Ask AI.">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00F0FF">
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --bg: #090B10;
-            --surface: #121620;
-            --surface-border: #232B3E;
-            --accent: #00F0FF;
-            --accent-glow: rgba(0, 240, 255, 0.4);
-            --accent-dark: #0284C7;
-            --text-primary: #F8FAFC;
+            --bg-cosmic: #07090E;
+            --surface-glass: rgba(18, 24, 38, 0.65);
+            --surface-elevated: rgba(26, 34, 52, 0.75);
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --border-glow: rgba(0, 240, 255, 0.3);
+            --galaxy-cyan: #00F0FF;
+            --galaxy-blue: #3B82F6;
+            --galaxy-violet: #C084FC;
+            --galaxy-pink: #F472B6;
+            --text-primary: #FFFFFF;
             --text-secondary: #94A3B8;
+            --oneui-radius: 32px;
+            --oneui-pill: 999px;
         }
 
         * {
@@ -28,300 +38,507 @@
 
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--bg);
+            background-color: var(--bg-cosmic);
             color: var(--text-primary);
             line-height: 1.6;
             overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.14) 0%, transparent 50%),
+                radial-gradient(circle at 85% 25%, rgba(192, 132, 252, 0.12) 0%, transparent 45%),
+                radial-gradient(circle at 15% 65%, rgba(59, 130, 246, 0.1) 0%, transparent 45%);
+            background-attachment: fixed;
         }
 
-        /* Ambient glowing background */
-        .ambient-glow {
+        /* Ambient floating orbs */
+        .ambient-mesh {
             position: fixed;
-            top: -200px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 800px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(0, 240, 255, 0.15) 0%, rgba(2, 132, 199, 0.08) 45%, transparent 70%);
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             pointer-events: none;
             z-index: 0;
+            overflow: hidden;
         }
 
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.5;
+            animation: floatOrb 20s infinite alternate ease-in-out;
+        }
+
+        .orb-1 {
+            top: -100px;
+            left: 20%;
+            width: 600px;
+            height: 600px;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(59, 130, 246, 0.15));
+        }
+
+        .orb-2 {
+            top: 30%;
+            right: -150px;
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, rgba(192, 132, 252, 0.25), rgba(244, 114, 182, 0.15));
+            animation-duration: 25s;
+        }
+
+        @keyframes floatOrb {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, 60px) scale(1.1); }
+        }
+
+        /* One UI Glass Navigation Bar */
         nav {
             position: sticky;
-            top: 0;
-            backdrop-filter: blur(16px);
-            background: rgba(9, 11, 16, 0.8);
-            border-bottom: 1px solid var(--surface-border);
-            z-index: 100;
-            padding: 16px 32px;
+            top: 16px;
+            margin: 0 auto;
+            max-width: 1140px;
+            backdrop-filter: blur(32px) saturate(190%);
+            -webkit-backdrop-filter: blur(32px) saturate(190%);
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--oneui-pill);
+            padding: 12px 28px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            z-index: 100;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.2);
+            transition: all 0.3s;
         }
 
-        .brand {
+        .brand-cluster {
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: 20px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            color: var(--text-primary);
             text-decoration: none;
+            color: var(--text-primary);
         }
 
-        .brand-badge {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            background: linear-gradient(135deg, #0284C7, #00F0FF);
+        .galaxy-stars {
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 16px var(--accent-glow);
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #00F0FF, #A855F7, #EC4899);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+            font-size: 16px;
+        }
+
+        .brand-title {
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .brand-title span {
+            background: linear-gradient(135deg, #00F0FF, #C084FC);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 24px;
+            gap: 20px;
         }
 
         .nav-link {
             color: var(--text-secondary);
             text-decoration: none;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             transition: color 0.2s;
         }
 
         .nav-link:hover {
-            color: var(--accent);
+            color: var(--galaxy-cyan);
         }
 
-        .btn-download-sm {
-            background: linear-gradient(135deg, #0284C7, #00F0FF);
-            color: #090B10;
-            font-weight: 700;
-            font-size: 13px;
-            padding: 8px 18px;
-            border-radius: 99px;
-            text-decoration: none;
-            box-shadow: 0 0 12px var(--accent-glow);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .btn-download-sm:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 0 20px var(--accent);
-        }
-
-        /* Hero section */
-        .hero {
-            position: relative;
-            z-index: 1;
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 80px 24px 40px;
-            text-align: center;
-        }
-
-        .tagline-pill {
+        .btn-oneui-glow {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: var(--surface);
-            border: 1px solid var(--surface-border);
-            padding: 6px 16px;
-            border-radius: 99px;
+            background: linear-gradient(135deg, #00F0FF, #3B82F6 60%, #8B5CF6 100%);
+            color: #07090E;
+            font-weight: 800;
             font-size: 13px;
-            font-weight: 600;
-            color: var(--accent);
-            margin-bottom: 24px;
-            box-shadow: 0 0 16px rgba(0, 240, 255, 0.1);
+            padding: 9px 22px;
+            border-radius: var(--oneui-pill);
+            text-decoration: none;
+            box-shadow: 0 0 24px rgba(0, 240, 255, 0.4);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-oneui-glow:hover {
+            transform: scale(1.04);
+            box-shadow: 0 0 36px rgba(0, 240, 255, 0.7);
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            z-index: 10;
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 70px 24px 30px;
+            text-align: center;
+        }
+
+        .galaxy-pill-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(20px);
+            background: rgba(18, 24, 38, 0.6);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            padding: 8px 20px;
+            border-radius: var(--oneui-pill);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--galaxy-cyan);
+            margin-bottom: 28px;
+            box-shadow: 0 0 24px rgba(0, 240, 255, 0.15);
         }
 
         h1 {
-            font-size: clamp(38px, 6vw, 64px);
+            font-size: clamp(40px, 6.5vw, 68px);
             font-weight: 800;
-            letter-spacing: -1.5px;
-            line-height: 1.1;
+            letter-spacing: -2px;
+            line-height: 1.08;
             margin-bottom: 24px;
         }
 
-        h1 span {
-            background: linear-gradient(135deg, #F8FAFC 30%, #00F0FF 100%);
+        .gradient-text {
+            background: linear-gradient(135deg, #FFFFFF 20%, #A5F3FC 50%, #C084FC 80%, #F472B6 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .hero-desc {
-            font-size: 18px;
+        .hero-subtitle {
+            font-size: 19px;
             color: var(--text-secondary);
-            max-width: 680px;
+            max-width: 720px;
             margin: 0 auto 36px;
+            font-weight: 400;
         }
 
-        .cta-group {
+        .hotkey-tag {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: var(--galaxy-cyan);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .cta-row {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 16px;
             flex-wrap: wrap;
-            margin-bottom: 48px;
+            margin-bottom: 60px;
         }
 
-        .btn-primary {
+        .btn-cta-hero {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #00F0FF, #3B82F6 50%, #A855F7 100%);
+            color: #07090E;
+            font-size: 16px;
+            font-weight: 800;
+            padding: 16px 36px;
+            border-radius: var(--oneui-pill);
+            text-decoration: none;
+            box-shadow: 0 12px 40px rgba(0, 240, 255, 0.45);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-cta-hero:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 16px 50px rgba(0, 240, 255, 0.7);
+        }
+
+        .btn-cta-glass {
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            background: linear-gradient(135deg, #0284C7, #00F0FF);
-            color: #090B10;
+            backdrop-filter: blur(24px);
+            background: var(--surface-glass);
+            color: var(--text-primary);
+            border: 1px solid var(--border-glass);
             font-size: 16px;
             font-weight: 700;
-            padding: 14px 32px;
-            border-radius: 12px;
+            padding: 16px 32px;
+            border-radius: var(--oneui-pill);
             text-decoration: none;
-            box-shadow: 0 8px 28px var(--accent-glow);
-            transition: all 0.2s;
+            transition: all 0.25s;
         }
 
-        .btn-primary:hover {
+        .btn-cta-glass:hover {
+            background: var(--surface-elevated);
+            border-color: var(--galaxy-cyan);
             transform: translateY(-2px);
-            box-shadow: 0 12px 36px var(--accent);
         }
 
-        .btn-secondary {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--surface);
-            color: var(--text-primary);
-            border: 1px solid var(--surface-border);
-            font-size: 16px;
-            font-weight: 600;
-            padding: 14px 28px;
-            border-radius: 12px;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-
-        .btn-secondary:hover {
-            background: #1C2333;
-            border-color: #38BDF8;
-        }
-
-        /* Interactive Canvas Demo Simulator */
-        .demo-container {
-            max-width: 880px;
-            margin: 0 auto 80px;
-            border-radius: 20px;
-            background: #10141D;
-            border: 1px solid var(--surface-border);
+        /* One UI 8.5 Interactive Simulator Container */
+        .simulator-window {
+            max-width: 980px;
+            margin: 0 auto 90px;
+            border-radius: var(--oneui-radius);
+            backdrop-filter: blur(40px) saturate(180%);
+            background: var(--surface-glass);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             overflow: hidden;
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 240, 255, 0.15);
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.7), 0 0 50px rgba(0, 240, 255, 0.18);
             position: relative;
         }
 
-        .demo-header {
-            background: #161B26;
-            padding: 12px 20px;
+        .sim-header {
+            background: rgba(14, 18, 28, 0.85);
+            padding: 16px 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 1px solid var(--surface-border);
+            border-bottom: 1px solid var(--border-glass);
         }
 
-        .window-dots {
+        .sim-title {
             display: flex;
+            align-items: center;
             gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
         }
 
-        .dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .dot-red { background: #EF4444; }
-        .dot-yellow { background: #F59E0B; }
-        .dot-green { background: #10B981; }
-
-        .demo-canvas-wrap {
+        .sim-screen {
             position: relative;
-            height: 420px;
+            height: 480px;
+            background: #0D111A;
             cursor: crosshair;
             user-select: none;
+            overflow: hidden;
         }
 
-        canvas {
+        /* Canvas inside simulator */
+        #oneUiCanvas {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            z-index: 10;
         }
 
-        .demo-hint {
+        /* One UI Floating Toolbar Pop-Up */
+        .oneui-floating-pill {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(18, 22, 32, 0.85);
-            border: 1px solid var(--surface-border);
-            padding: 8px 18px;
-            border-radius: 99px;
-            font-size: 13px;
-            color: var(--accent);
-            pointer-events: none;
-            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: var(--oneui-pill);
+            backdrop-filter: blur(32px) saturate(190%);
+            background: rgba(18, 24, 38, 0.88);
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 240, 255, 0.35);
+            z-index: 20;
+            opacity: 0;
+            transform: scale(0.9) translateY(10px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
         }
 
-        /* Feature grid */
-        .features {
-            max-width: 1100px;
+        .oneui-floating-pill.active {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        .pill-action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 99px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .pill-action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .pill-action-btn.primary {
+            background: linear-gradient(135deg, #00F0FF, #3B82F6);
+            color: #07090E;
+            box-shadow: 0 0 14px rgba(0, 240, 255, 0.4);
+        }
+
+        /* Floating AI Response Card in Simulator */
+        .oneui-ai-response-card {
+            position: absolute;
+            width: 320px;
+            padding: 18px;
+            border-radius: 24px;
+            backdrop-filter: blur(36px);
+            background: rgba(15, 20, 32, 0.95);
+            border: 1px solid rgba(192, 132, 252, 0.4);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(192, 132, 252, 0.25);
+            z-index: 25;
+            display: none;
+            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Step-by-Step Installation Cards (Answering user process question) */
+        .guide-section {
+            max-width: 1040px;
             margin: 0 auto 100px;
             padding: 0 24px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
         }
 
-        .feature-card {
-            background: var(--surface);
-            border: 1px solid var(--surface-border);
-            border-radius: 16px;
-            padding: 28px;
+        .section-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .section-header h2 {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 12px;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 17px;
+        }
+
+        .step-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .step-card {
+            backdrop-filter: blur(28px);
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--oneui-radius);
+            padding: 32px 24px;
+            position: relative;
             transition: all 0.3s;
         }
 
-        .feature-card:hover {
-            transform: translateY(-4px);
-            border-color: #38BDF8;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        .step-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--galaxy-cyan);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 240, 255, 0.15);
         }
 
-        .feature-icon {
-            font-size: 32px;
-            margin-bottom: 16px;
-            display: inline-block;
+        .step-badge {
+            width: 44px;
+            height: 44px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(192, 132, 252, 0.2));
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--galaxy-cyan);
+            margin-bottom: 20px;
         }
 
-        .feature-title {
+        .step-title {
             font-size: 18px;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
-        .feature-desc {
+        .step-desc {
             font-size: 14px;
             color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Feature Cards */
+        .features-grid {
+            max-width: 1040px;
+            margin: 0 auto 100px;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card-oneui {
+            backdrop-filter: blur(28px);
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--oneui-radius);
+            padding: 36px 28px;
+            transition: all 0.3s;
+        }
+
+        .feature-card-oneui:hover {
+            transform: translateY(-4px);
+            border-color: rgba(192, 132, 252, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(192, 132, 252, 0.15);
+        }
+
+        .feature-icon-box {
+            font-size: 36px;
+            margin-bottom: 18px;
+        }
+
+        /* Update Notification Banner (PWA / SW) */
+        #updateToast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: none;
+            backdrop-filter: blur(32px);
+            background: rgba(18, 24, 38, 0.95);
+            border: 1px solid var(--galaxy-cyan);
+            border-radius: var(--oneui-pill);
+            padding: 12px 24px;
+            color: var(--text-primary);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(0, 240, 255, 0.3);
+            z-index: 1000;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
         }
 
         footer {
-            border-top: 1px solid var(--surface-border);
-            padding: 40px 24px;
+            border-top: 1px solid var(--border-glass);
+            padding: 48px 24px;
             text-align: center;
             font-size: 14px;
             color: var(--text-secondary);
@@ -329,139 +546,272 @@
     </style>
 </head>
 <body>
-    <div class="ambient-glow"></div>
+    <div class="ambient-mesh">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>
 
+    <!-- Navigation -->
     <nav>
-        <a href="#" class="brand">
-            <div class="brand-badge">✨</div>
-            SelectAI
+        <a href="#" class="brand-cluster">
+            <div class="galaxy-stars">✦</div>
+            <div class="brand-title">Select<span>AI</span></div>
         </a>
         <div class="nav-links">
+            <a href="#how-it-works" class="nav-link">How It Works</a>
             <a href="https://github.com/bharath-0814/SelectAI" target="_blank" class="nav-link">GitHub</a>
-            <a href="https://github.com/bharath-0814/SelectAI/releases" target="_blank" class="nav-link">Releases</a>
-            <a href="https://github.com/bharath-0814/SelectAI/releases/download/v1.0.0/SelectAI-v1.0.0-win-x64.zip" class="btn-download-sm">Download v1.0.0</a>
+            <a href="https://github.com/bharath-0814/SelectAI/releases/download/v1.0.0/SelectAI-v1.0.0-win-x64.zip" class="btn-oneui-glow">
+                <span>✦</span> Download v1.0.0
+            </a>
         </div>
     </nav>
 
+    <!-- Hero Section -->
     <main class="hero">
-        <div class="tagline-pill">✨ Windows 11 AI Screen Selection Tool</div>
-        <h1>Circle Anything on Screen.<br><span>Instant AI Intelligence.</span></h1>
-        <p class="hero-desc">
-            A native, customizable alternative to Samsung Galaxy Book AI Select.
-            Press <code style="color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 15px;">Ctrl + Shift + Space</code>, draw a freeform glowing loop around anything, and let AI explain, search, or extract it.
+        <div class="galaxy-pill-badge">
+            <span>✦</span> Samsung Galaxy Book AI Select Reimagined
+        </div>
+        <h1>
+            Circle Anything on Screen.<br>
+            <span class="gradient-text">Instant Galaxy AI Intelligence.</span>
+        </h1>
+        <p class="hero-subtitle">
+            A native Windows 11 utility inspired by One UI 8.5. Press <span class="hotkey-tag">Ctrl + Shift + Space</span>, draw a luminous glowing circle around any code, image, or text, and trigger seamless AI reasoning.
         </p>
 
-        <div class="cta-group">
-            <a href="https://github.com/bharath-0814/SelectAI/releases/download/v1.0.0/SelectAI-v1.0.0-win-x64.zip" class="btn-primary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download for Windows (Portable .zip)
+        <div class="cta-row">
+            <a href="https://github.com/bharath-0814/SelectAI/releases/download/v1.0.0/SelectAI-v1.0.0-win-x64.zip" class="btn-cta-hero">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download SelectAI (69 MB .zip)
             </a>
-            <a href="https://github.com/bharath-0814/SelectAI" target="_blank" class="btn-secondary">
+            <a href="https://github.com/bharath-0814/SelectAI" target="_blank" class="btn-cta-glass">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                View on GitHub
+                GitHub Source (v1.0.0)
             </a>
         </div>
 
-        <!-- Interactive Browser Demo -->
-        <div class="demo-container">
-            <div class="demo-header">
-                <div class="window-dots">
-                    <div class="dot dot-red"></div>
-                    <div class="dot dot-yellow"></div>
-                    <div class="dot dot-green"></div>
+        <!-- Interactive Galaxy Book AI Simulator -->
+        <div class="simulator-window">
+            <div class="sim-header">
+                <div style="display: flex; gap: 8px;">
+                    <span style="width: 12px; height: 12px; border-radius: 50%; background: #EF4444;"></span>
+                    <span style="width: 12px; height: 12px; border-radius: 50%; background: #F59E0B;"></span>
+                    <span style="width: 12px; height: 12px; border-radius: 50%; background: #10B981;"></span>
                 </div>
-                <div style="font-size: 12px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace;">
-                    Interactive Demo — Draw or circle below!
+                <div class="sim-title">
+                    <span>✦ Galaxy AI Interactive Canvas</span> — Circle anything below!
                 </div>
-                <div style="font-size: 11px; color: var(--accent); font-weight: 600;">
-                    LIVE CANVAS
+                <div style="font-size: 11px; font-weight: 700; color: var(--galaxy-cyan);">
+                    ONE UI 8.5 ENGINE
                 </div>
             </div>
-            <div class="demo-canvas-wrap" id="canvasWrap">
-                <canvas id="tracerCanvas"></canvas>
-                <div class="demo-hint" id="demoHint">🖱️ Click and drag anywhere to test the neon tracing effect</div>
+
+            <div class="sim-screen" id="simScreen">
+                <canvas id="oneUiCanvas"></canvas>
+
+                <!-- Floating One UI 8.5 Action Pill -->
+                <div class="oneui-floating-pill" id="floatingPill">
+                    <button class="pill-action-btn primary" id="btnAskAi">
+                        <span>✦</span> Ask Galaxy AI
+                    </button>
+                    <button class="pill-action-btn" onclick="alert('Searching query on Google in your default browser!')">
+                        🔍 Search
+                    </button>
+                    <button class="pill-action-btn" onclick="alert('Opening Google Lens visual search!')">
+                        📷 Lens
+                    </button>
+                    <button class="pill-action-btn" onclick="alert('Extracted and copied to clipboard!')">
+                        📋 Copy
+                    </button>
+                </div>
+
+                <!-- Floating AI Answer Popup -->
+                <div class="oneui-ai-response-card" id="aiResponseCard">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-weight: 800; font-size: 14px; color: var(--galaxy-cyan); display: flex; align-items: center; gap: 6px;">
+                            <span>✦</span> Galaxy AI Insights
+                        </span>
+                        <button onclick="document.getElementById('aiResponseCard').style.display='none'" style="background:none; border:none; color: var(--text-secondary); cursor: pointer; font-size: 16px;">✕</button>
+                    </div>
+                    <p style="font-size: 13px; color: #E2E8F0; line-height: 1.5; margin-bottom: 12px;">
+                        <strong>Selection Analyzed:</strong> Identified compiler error code in your screen selection.
+                    </p>
+                    <div style="background: rgba(0,0,0,0.4); border-radius: 12px; padding: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #38BDF8; margin-bottom: 12px;">
+                        // Suggested Fix:<br>
+                        if (obj != null) { obj.Process(); }
+                    </div>
+                    <button style="width: 100%; background: linear-gradient(135deg, #00F0FF, #3B82F6); border: none; padding: 8px; border-radius: 99px; font-weight: 700; font-size: 12px; cursor: pointer; color: #07090E;">
+                        Copy Answer
+                    </button>
+                </div>
             </div>
         </div>
     </main>
 
-    <!-- Features Section -->
-    <section class="features">
-        <div class="feature-card">
-            <div class="feature-icon">〰️</div>
-            <h3 class="feature-title">Galaxy Book Tracing Feel</h3>
-            <p class="feature-desc">Real-time Chaikin &amp; Catmull-Rom spline smoothing with a multi-layered neon bloom and animated star comet head.</p>
+    <!-- Step-by-Step Installation Guide (Answering User Question) -->
+    <section class="guide-section" id="how-it-works">
+        <div class="section-header">
+            <h2>Downloaded the 69 MB Zip? Here's What's Next</h2>
+            <p>SelectAI is 100% standalone. No installers, no runtime setup, no admin privileges required.</p>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon">⚡</div>
-            <h3 class="feature-title">100% Offline Native OCR</h3>
-            <p class="feature-desc">Extract text instantly using Windows 10/11 native <code style="color:#38BDF8">Windows.Media.Ocr</code>. Private, local, and zero internet needed.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon">🤖</div>
-            <h3 class="feature-title">Multimodal Ask AI</h3>
-            <p class="feature-desc">Connect Google Gemini 2.0 Flash or OpenAI GPT-4o for live visual understanding, or use the built-in assistant.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon">🔍</div>
-            <h3 class="feature-title">Google Search &amp; Lens</h3>
-            <p class="feature-desc">Launch text searches and visual reverse image lookups directly in your preferred system default browser.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon">🛡️</div>
-            <h3 class="feature-title">Pure User-Mode Windows APIs</h3>
-            <p class="feature-desc">Built with native Win32 user-mode APIs. Zero kernel drivers, completely safe, and DPAPI-encrypted credential storage.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon">💻</div>
-            <h3 class="feature-title">Multi-Monitor &amp; High-DPI</h3>
-            <p class="feature-desc">Native PerMonitorV2 DPI awareness. Seamlessly captures across all displays whether at 100%, 125%, 150%, or 200% scaling.</p>
+
+        <div class="step-cards-grid">
+            <div class="step-card">
+                <div class="step-badge">01</div>
+                <h3 class="step-title">Extract the Zip</h3>
+                <p class="step-desc">
+                    Right-click <code style="color:var(--galaxy-cyan)">SelectAI-v1.0.0-win-x64.zip</code> and choose <strong>"Extract All..."</strong> to any folder (e.g. your Desktop or Downloads).
+                </p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-badge">02</div>
+                <h3 class="step-title">Double-Click App</h3>
+                <p class="step-desc">
+                    Open the folder and run <strong>SelectAI.exe</strong>. If Windows SmartScreen shows a blue banner, tap <em>"More info" → "Run anyway"</em>.
+                </p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-badge">03</div>
+                <h3 class="step-title">Tray Docking</h3>
+                <p class="step-desc">
+                    SelectAI starts quietly and docks in your Windows system tray (bottom-right near clock) with a glowing cyan circle icon.
+                </p>
+            </div>
+
+            <div class="step-card">
+                <div class="step-badge">04</div>
+                <h3 class="step-title">Press Hotkey</h3>
+                <p class="step-desc">
+                    Press <span class="hotkey-tag" style="font-size:12px;">Ctrl + Shift + Space</span> anywhere in Windows to freeze the screen, circle content, and Ask AI!
+                </p>
+            </div>
         </div>
     </section>
 
+    <!-- Features Section -->
+    <section class="features-grid">
+        <div class="feature-card-oneui">
+            <div class="feature-icon-box">〰️</div>
+            <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">One UI 8.5 Tracing Physics</h3>
+            <p style="color: var(--text-secondary); font-size: 14px;">
+                Advanced Chaikin &amp; Catmull-Rom spline smoothing renders dynamic holographic neon curves without jagged mouse jitters.
+            </p>
+        </div>
+        <div class="feature-card-oneui">
+            <div class="feature-icon-box">⚡</div>
+            <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">Offline Windows OCR</h3>
+            <p style="color: var(--text-secondary); font-size: 14px;">
+                Powered by native Windows 10/11 <code style="color: #38BDF8;">Windows.Media.Ocr</code>. 100% offline, local, private, and instantaneous.
+            </p>
+        </div>
+        <div class="feature-card-oneui">
+            <div class="feature-icon-box">✦</div>
+            <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">Multimodal AI Architecture</h3>
+            <p style="color: var(--text-secondary); font-size: 14px;">
+                Pluggable AI providers: connect Google Gemini 2.0 Flash or OpenAI GPT-4o, or use the built-in offline assistant.
+            </p>
+        </div>
+        <div class="feature-card-oneui">
+            <div class="feature-icon-box">🔍</div>
+            <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">Default Browser Searches</h3>
+            <p style="color: var(--text-secondary); font-size: 14px;">
+                Respects your system choice: opens Google Search and Google Lens directly in Chrome, Brave, Firefox, or Edge.
+            </p>
+        </div>
+        <div class="feature-card-oneui">
+            <div class="feature-icon-box">🔒</div>
+            <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">Windows DPAPI Encryption</h3>
+            <p style="color: var(--text-secondary); font-size: 14px;">
+                API keys are encrypted with hardware-tied Windows DPAPI. Zero external cloud tracking, zero kernel drivers.
+            </p>
+        </div>
+        <div class="feature-card-oneui">
+            <div class="feature-icon-box">🖥️</div>
+            <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 10px;">Multi-Monitor &amp; High-DPI</h3>
+            <p style="color: var(--text-secondary); font-size: 14px;">
+                Native PerMonitorV2 support. Perfectly spans multi-display setups at 100%, 125%, 150%, and 200% scaling.
+            </p>
+        </div>
+    </section>
+
+    <!-- Floating PWA Update Notification -->
+    <div id="updateToast" onclick="window.location.reload()">
+        <span>✦</span> New SelectAI update available — Tap to reload
+    </div>
+
     <footer>
-        <p>SelectAI is an open-source project released under the MIT License.</p>
-        <p style="margin-top: 8px;">Created with ❤️ for the Windows community.</p>
+        <p>SelectAI is an open-source project inspired by Samsung Galaxy Book AI Select.</p>
+        <p style="margin-top: 8px;">Released under the MIT License • Built with C# .NET 8 &amp; Win32 APIs</p>
     </footer>
 
+    <!-- Interactive One UI Canvas Simulator Script -->
     <script>
-        // Interactive Canvas Simulator for the Glowing Neon Tracing Effect
-        const canvas = document.getElementById('tracerCanvas');
+        const canvas = document.getElementById('oneUiCanvas');
         const ctx = canvas.getContext('2d');
-        const hint = document.getElementById('demoHint');
+        const pill = document.getElementById('floatingPill');
+        const aiCard = document.getElementById('aiResponseCard');
+        const btnAskAi = document.getElementById('btnAskAi');
 
-        function resizeCanvas() {
+        function resizeSim() {
             canvas.width = canvas.parentElement.clientWidth;
             canvas.height = canvas.parentElement.clientHeight;
-            drawInitialDemo();
+            drawDesktopMockup();
         }
 
-        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('resize', resizeSim);
 
         let points = [];
         let isDrawing = false;
 
-        function drawInitialDemo() {
+        function drawDesktopMockup() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw sample decorative content to circle
-            ctx.fillStyle = '#1A2130';
-            ctx.beginPath();
-            ctx.roundRect(canvas.width / 2 - 120, canvas.height / 2 - 50, 240, 100, 12);
-            ctx.fill();
 
-            ctx.fillStyle = '#64748B';
-            ctx.font = '14px "JetBrains Mono", monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText('NullReferenceException', canvas.width / 2, canvas.height / 2 - 10);
+            // Mockup Desktop UI cards to select
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // Card 1: Sample Code Snippet
+            ctx.fillStyle = '#141A26';
+            ctx.beginPath();
+            ctx.roundRect(cx - 240, cy - 80, 220, 140, 20);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.stroke();
+
+            ctx.fillStyle = '#38BDF8';
+            ctx.font = '13px "JetBrains Mono", monospace';
+            ctx.fillText('NullReferenceException', cx - 220, cy - 45);
             ctx.fillStyle = '#94A3B8';
             ctx.font = '12px "Plus Jakarta Sans", sans-serif';
-            ctx.fillText('Try drawing a loop around this!', canvas.width / 2, canvas.height / 2 + 18);
+            ctx.fillText('Line 42: obj.InvokeMethod()', cx - 220, cy - 20);
+            ctx.fillStyle = '#64748B';
+            ctx.fillText('Circle to debug with AI ✦', cx - 220, cy + 30);
+
+            // Card 2: Sample Image / Chart
+            ctx.fillStyle = '#141A26';
+            ctx.beginPath();
+            ctx.roundRect(cx + 20, cy - 80, 220, 140, 20);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.stroke();
+
+            ctx.fillStyle = '#C084FC';
+            ctx.font = '14px "Plus Jakarta Sans", sans-serif';
+            ctx.fillText('🖼️ Product Diagram', cx + 40, cy - 45);
+            ctx.fillStyle = '#94A3B8';
+            ctx.font = '12px "Plus Jakarta Sans", sans-serif';
+            ctx.fillText('Circle to search on Google Lens', cx + 40, cy - 15);
+            ctx.fillStyle = '#64748B';
+            ctx.fillText('or translate text', cx + 40, cy + 30);
         }
 
         canvas.addEventListener('mousedown', (e) => {
             isDrawing = true;
             points = [];
-            hint.style.opacity = '0';
+            pill.classList.remove('active');
+            aiCard.style.display = 'none';
             const rect = canvas.getBoundingClientRect();
             points.push({ x: e.clientX - rect.left, y: e.clientY - rect.top });
         });
@@ -470,50 +820,91 @@
             if (!isDrawing) return;
             const rect = canvas.getBoundingClientRect();
             points.push({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-            renderStroke();
+            renderGalaxyStroke();
         });
 
         window.addEventListener('mouseup', () => {
             if (!isDrawing) return;
             isDrawing = false;
+
+            if (points.length > 5) {
+                // Determine bounding box
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                points.forEach(p => {
+                    if (p.x < minX) minX = p.x;
+                    if (p.y < minY) minY = p.y;
+                    if (p.x > maxX) maxX = p.x;
+                    if (p.y > maxY) maxY = p.y;
+                });
+
+                // Position floating One UI pill
+                const pillX = Math.max(16, Math.min(canvas.width - 320, minX + (maxX - minX) / 2 - 140));
+                const pillY = Math.min(canvas.height - 60, maxY + 14);
+
+                pill.style.left = `${pillX}px`;
+                pill.style.top = `${pillY}px`;
+                pill.classList.add('active');
+
+                // Prepare AI Card position
+                aiCard.style.left = `${Math.max(16, Math.min(canvas.width - 340, pillX))}px`;
+                aiCard.style.top = `${Math.max(16, pillY - 220)}px`;
+            }
         });
 
-        function renderStroke() {
+        btnAskAi.addEventListener('click', () => {
+            aiCard.style.display = 'block';
+        });
+
+        function renderGalaxyStroke() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawInitialDemo();
+            drawDesktopMockup();
 
             if (points.length < 2) return;
 
-            // Layer 1: Outer soft bloom
-            ctx.lineWidth = 14;
-            ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+            // Holographic Galaxy Gradient
+            const head = points[points.length - 1];
+            const tail = points[0];
+            const strokeGrad = ctx.createLinearGradient(tail.x, tail.y, head.x, head.y);
+            strokeGrad.addColorStop(0, '#00F0FF');
+            strokeGrad.addColorStop(0.5, '#C084FC');
+            strokeGrad.addColorStop(1, '#F472B6');
+
+            // Layer 1: Ethereal Bloom Halo
+            ctx.lineWidth = 16;
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.2)';
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            drawPath(points);
+            drawSmoothPath(points);
 
-            // Layer 2: Mid vibrant neon
+            // Layer 2: Vibrant Galaxy Neon
             ctx.lineWidth = 6;
-            ctx.strokeStyle = 'rgba(0, 240, 255, 0.7)';
-            drawPath(points);
+            ctx.strokeStyle = strokeGrad;
+            drawSmoothPath(points);
 
-            // Layer 3: Razor white core
-            ctx.lineWidth = 2.5;
+            // Layer 3: Laser White Core
+            ctx.lineWidth = 2.2;
             ctx.strokeStyle = '#FFFFFF';
-            drawPath(points);
+            drawSmoothPath(points);
 
-            // Layer 4: Leading comet star head
-            const head = points[points.length - 1];
-            const grad = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 14);
+            // Layer 4: Animated Star Comet Head
+            const grad = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 16);
             grad.addColorStop(0, '#FFFFFF');
-            grad.addColorStop(0.4, 'rgba(0, 240, 255, 0.8)');
-            grad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+            grad.addColorStop(0.3, 'rgba(0, 240, 255, 0.9)');
+            grad.addColorStop(0.7, 'rgba(192, 132, 252, 0.6)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
             ctx.fillStyle = grad;
             ctx.beginPath();
-            ctx.arc(head.x, head.y, 14, 0, Math.PI * 2);
+            ctx.arc(head.x, head.y, 16, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Diamond sparkle in center of head
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(head.x, head.y, 3, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        function drawPath(pts) {
+        function drawSmoothPath(pts) {
             ctx.beginPath();
             ctx.moveTo(pts[0].x, pts[0].y);
             for (let i = 1; i < pts.length; i++) {
@@ -522,7 +913,25 @@
             ctx.stroke();
         }
 
-        setTimeout(resizeCanvas, 50);
+        setTimeout(resizeSim, 50);
+
+        // PWA Service Worker Registration & Live Update Listener
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => {
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    document.getElementById('updateToast').style.display = 'block';
+                                }
+                            });
+                        });
+                    })
+                    .catch((err) => console.log('SW registration error:', err));
+            });
+        }
     </script>
 </body>
 </html>
