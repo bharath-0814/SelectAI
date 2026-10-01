@@ -36,6 +36,19 @@ public sealed class TrayIconManager : IDisposable
         BuildContextMenu();
     }
 
+    public void ShowReadyNotification()
+    {
+        try
+        {
+            _notifyIcon.ShowBalloonTip(
+                3000,
+                "SelectAI is Running",
+                "Press Ctrl + Shift + Space anywhere to start selecting!",
+                ToolTipIcon.Info);
+        }
+        catch { }
+    }
+
     public void BuildContextMenu()
     {
         var menu = new ContextMenuStrip();

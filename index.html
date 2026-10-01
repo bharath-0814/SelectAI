@@ -652,40 +652,63 @@
     <section class="guide-section" id="how-it-works">
         <div class="section-header">
             <h2>Downloaded the 69 MB Zip? Here's What's Next</h2>
-            <p>SelectAI is 100% standalone. No installers, no runtime setup, no admin privileges required.</p>
+            <p>SelectAI is 100% standalone and portable. No installers or background services required.</p>
         </div>
 
         <div class="step-cards-grid">
             <div class="step-card">
                 <div class="step-badge">01</div>
-                <h3 class="step-title">Extract the Zip</h3>
+                <h3 class="step-title">Extract the Zip First</h3>
                 <p class="step-desc">
-                    Right-click <code style="color:var(--galaxy-cyan)">SelectAI-v1.0.0-win-x64.zip</code> and choose <strong>"Extract All..."</strong> to any folder (e.g. your Desktop or Downloads).
+                    Right-click <code style="color:var(--galaxy-cyan)">SelectAI-v1.0.0-win-x64.zip</code> and select <strong>"Extract All..."</strong>. <em>Do not run directly from inside the Windows ZIP folder preview!</em>
                 </p>
             </div>
 
             <div class="step-card">
                 <div class="step-badge">02</div>
-                <h3 class="step-title">Double-Click App</h3>
+                <h3 class="step-title">Run SelectAI.exe</h3>
                 <p class="step-desc">
-                    Open the folder and run <strong>SelectAI.exe</strong>. If Windows SmartScreen shows a blue banner, tap <em>"More info" → "Run anyway"</em>.
+                    Double-click <strong>SelectAI.exe</strong>. If Windows SmartScreen displays the blue banner, click <em>"More info" → "Run anyway"</em>, or run the included <strong>Unblock_SelectAI.bat</strong>.
                 </p>
             </div>
 
             <div class="step-card">
                 <div class="step-badge">03</div>
-                <h3 class="step-title">Tray Docking</h3>
+                <h3 class="step-title">Quick Start Window</h3>
                 <p class="step-desc">
-                    SelectAI starts quietly and docks in your Windows system tray (bottom-right near clock) with a glowing cyan circle icon.
+                    The <strong>Quick Start &amp; Settings</strong> window pops up immediately! Click <strong>"✨ Try Selection Mode Now"</strong> to experience instant screen tracing.
                 </p>
             </div>
 
             <div class="step-card">
                 <div class="step-badge">04</div>
-                <h3 class="step-title">Press Hotkey</h3>
+                <h3 class="step-title">Global Hotkey Ready</h3>
                 <p class="step-desc">
-                    Press <span class="hotkey-tag" style="font-size:12px;">Ctrl + Shift + Space</span> anywhere in Windows to freeze the screen, circle content, and Ask AI!
+                    Press <span class="hotkey-tag" style="font-size:12px;">Ctrl + Shift + Space</span> anywhere in Windows to freeze the screen, draw around content, and Ask AI!
                 </p>
+            </div>
+        </div>
+
+        <!-- Security & SmartScreen Transparency Card -->
+        <div style="margin-top: 36px; background: rgba(14, 21, 37, 0.7); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 20px; padding: 24px 28px; backdrop-filter: blur(20px);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <span style="font-size: 24px;">🛡️</span>
+                <h3 style="font-size: 18px; font-weight: 800; color: #FFFFFF; margin: 0;">Why did Windows SmartScreen flag this?</h3>
+                <span style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #10B981; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 99px;">100% SAFE &amp; OPEN SOURCE</span>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px;">
+                Windows Defender SmartScreen automatically warns users about <strong>any newly compiled application</strong> downloaded from the internet until it accumulates thousands of downloads or buys a costly corporate certificate. SelectAI is 100% open source, operates entirely in user-space (zero kernel drivers), stores secrets in local Windows DPAPI encryption, and executes OCR completely offline.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: #94A3B8;">
+                <div style="background: rgba(255,255,255,0.04); padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+                    <strong style="color:var(--galaxy-cyan);">Option A:</strong> Click <em>"More info" → "Run anyway"</em> when launching.
+                </div>
+                <div style="background: rgba(255,255,255,0.04); padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+                    <strong style="color:var(--galaxy-cyan);">Option B:</strong> Double-click <code style="color:#FFF;">Unblock_SelectAI.bat</code> to unblock in 1 click.
+                </div>
+                <div style="background: rgba(255,255,255,0.04); padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+                    <strong style="color:var(--galaxy-cyan);">Option C:</strong> Double-click <code style="color:#FFF;">Install_Certificate.bat</code> to trust the digital signature.
+                </div>
             </div>
         </div>
     </section>

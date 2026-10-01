@@ -150,4 +150,13 @@ public partial class SettingsWindow : Window
         LoadSettingsToUi();
         TxtSaveFeedback.Text = "Reset to default settings.";
     }
+
+    private void OnTrySelectionClick(object sender, RoutedEventArgs e)
+    {
+        Hide();
+        if (Application.Current is App app)
+        {
+            app.TriggerSelection();
+        }
+    }
 }

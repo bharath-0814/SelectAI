@@ -27,11 +27,25 @@ public partial class App : System.Windows.Application
     private GlobalHotkeyManager? _hotkeyManager;
     private TrayIconManager? _trayIconManager;
 
+    private static System.Threading.Mutex? _singleInstanceMutex;
     private HwndSource? _messageHwndSource;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        const string mutexName = "SelectAI_SingleInstance_Mutex_9B87F1C4";
+        _singleInstanceMutex = new System.Threading.Mutex(true, mutexName, out bool isNewInstance);
+        if (!isNewInstance)
+        {
+            System.Windows.MessageBox.Show(
+                "SelectAI is already running in your system tray.\n\nPress Ctrl + Shift + Space anywhere to start selecting, or right-click the SelectAI icon in your taskbar system tray.",
+                "SelectAI is Already Running",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            Shutdown();
+            return;
+        }
 
         // Keep app running in background (system tray)
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -84,11 +98,12 @@ public partial class App : System.Windows.Application
                 startSelectionAction: TriggerSelection,
                 openSettingsAction: OpenSettings);
 
-            // If not started with --background, can start initial selection or notify
+            // If not started in background mode, notify user and open Settings / Quick Start UI
             bool isBackground = e.Args.Any(a => a.Equals("--background", StringComparison.OrdinalIgnoreCase));
             if (!isBackground)
             {
-                // Ready in system tray
+                _trayIconManager.ShowReadyNotification();
+                OpenSettings();
             }
         }
         catch (Exception ex)
@@ -143,6 +158,13 @@ public partial class App : System.Windows.Application
         _messageHwndSource?.Dispose();
         _trayIconManager?.Dispose();
         _overlayWindow?.Close();
+
+        try
+        {
+            _singleInstanceMutex?.ReleaseMutex();
+            _singleInstanceMutex?.Dispose();
+        }
+        catch { }
 
         base.OnExit(e);
     }
