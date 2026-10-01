@@ -1,0 +1,9 @@
+dist/
+publish/
+SelectAI/
+SelectAI.Tests/
+*.ps1
+*.cs
+*.csproj
+*.sln
+.git
