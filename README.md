@@ -1,6 +1,13 @@
 # SelectAI — Screen Selection & AI Assistant
 
-**SelectAI** is a premium, native Windows 11 desktop utility inspired by Samsung Galaxy Book AI Select. It allows you to press a global hotkey from anywhere in the operating system, draw or circle anything on your screen with a glowing neon tracer, and perform intelligent actions on the selected content.
+[![Live Website](https://img.shields.io/badge/Website-select--ai--bay.vercel.app-00F0FF?style=for-the-badge&logo=vercel)](https://select-ai-bay.vercel.app)
+[![Download Release](https://img.shields.io/github/v/release/bharath-0814/SelectAI?style=for-the-badge&color=0284C7&label=Download%20v1.0.0)](https://github.com/bharath-0814/SelectAI/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+
+**SelectAI** is a premium, native Windows 11 desktop utility inspired by Samsung Galaxy Book AI Select. It allows you to press a global hotkey (`Ctrl + Shift + Space`) from anywhere in the operating system, draw or circle anything on your screen with a glowing neon tracer, and perform intelligent actions on the selected content.
+
+🌐 **Live Showcase & Interactive Demo**: [https://select-ai-bay.vercel.app](https://select-ai-bay.vercel.app)  
+📦 **Download Standalone .zip**: [SelectAI-v1.0.0-win-x64.zip](https://github.com/bharath-0814/SelectAI/releases/download/v1.0.0/SelectAI-v1.0.0-win-x64.zip)
 
 ---
 
