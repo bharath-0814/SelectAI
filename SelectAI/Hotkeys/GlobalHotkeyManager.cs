@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
@@ -10,9 +9,11 @@ namespace SelectAI.Hotkeys;
 
 public sealed class GlobalHotkeyManager : IDisposable
 {
-    private const int HotkeyIdPrimary = 9001;
-    private const int HotkeyIdSecondary = 9002;
-    private const int HotkeyIdTertiary = 9003;
+    private const int HotkeyIdPrimary = 9001;    // Ctrl + Shift + C
+    private const int HotkeyIdSecondary = 9002;  // Ctrl + Shift + S
+    private const int HotkeyIdTertiary = 9003;   // Ctrl + Shift + Space
+    private const int HotkeyIdQuaternary = 9004; // Alt + Shift + C
+    private const int HotkeyIdQuinary = 9005;    // Alt + Shift + S
 
     private const int WH_KEYBOARD_LL = 13;
     private const int WM_KEYDOWN = 0x0100;
@@ -24,6 +25,7 @@ public sealed class GlobalHotkeyManager : IDisposable
     private const int VK_CONTROL = 0x11;
     private const int VK_MENU = 0x12; // Alt
     private const int VK_SPACE = 0x20;
+    private const int VK_C = 0x43;
     private const int VK_S = 0x53;
     private const int VK_LWIN = 0x5B;
     private const int VK_RWIN = 0x5C;
@@ -58,14 +60,14 @@ public sealed class GlobalHotkeyManager : IDisposable
     private HwndSource? _hwndSource;
     private IntPtr _windowHandle = IntPtr.Zero;
 
-    // Track state of modifiers directly from hook
+    // Direct tracking of modifier states
     private bool _ctrlDown = false;
     private bool _shiftDown = false;
     private bool _altDown = false;
     private bool _winDown = false;
 
-    // Target keys
-    private int _targetVk = VK_SPACE;
+    // Target key (Default: C)
+    private int _targetVk = VK_C;
     private bool _reqCtrl = true;
     private bool _reqShift = true;
     private bool _reqAlt = false;
@@ -128,7 +130,7 @@ public sealed class GlobalHotkeyManager : IDisposable
 
         if (!Enum.TryParse<Key>(keyStr, true, out var key))
         {
-            key = Key.Space;
+            key = Key.C;
         }
 
         _targetVk = KeyInterop.VirtualKeyFromKey(key);
@@ -140,11 +142,11 @@ public sealed class GlobalHotkeyManager : IDisposable
         if (_reqWin) fsModifiers |= NativeMethods.MOD_WIN;
         fsModifiers |= NativeMethods.MOD_NOREPEAT;
 
-        // Register Primary Hotkey on Thread Message Queue
+        // 1. Register Primary Hotkey: Ctrl + Shift + C
         bool regThread1 = NativeMethods.RegisterHotKey(IntPtr.Zero, HotkeyIdPrimary, fsModifiers, (uint)_targetVk);
-        AppLog.Info($"RegisterHotKey(Thread, Primary {_targetVk:X2}): {regThread1}");
+        AppLog.Info($"RegisterHotKey(Thread, Primary 0x{_targetVk:X2}): {regThread1}");
 
-        // Register Secondary Hotkey (Ctrl + Shift + S) as instant fallback
+        // 2. Register Secondary Hotkey: Ctrl + Shift + S
         bool regThread2 = NativeMethods.RegisterHotKey(
             IntPtr.Zero,
             HotkeyIdSecondary,
@@ -152,13 +154,21 @@ public sealed class GlobalHotkeyManager : IDisposable
             (uint)VK_S);
         AppLog.Info($"RegisterHotKey(Thread, Secondary VK_S): {regThread2}");
 
-        // Register Tertiary Hotkey (Alt + Shift + S)
+        // 3. Register Tertiary Hotkey: Ctrl + Shift + Space
         bool regThread3 = NativeMethods.RegisterHotKey(
             IntPtr.Zero,
             HotkeyIdTertiary,
+            NativeMethods.MOD_CONTROL | NativeMethods.MOD_SHIFT | NativeMethods.MOD_NOREPEAT,
+            (uint)VK_SPACE);
+        AppLog.Info($"RegisterHotKey(Thread, Tertiary VK_SPACE): {regThread3}");
+
+        // 4. Register Quaternary Hotkey: Alt + Shift + C
+        bool regThread4 = NativeMethods.RegisterHotKey(
+            IntPtr.Zero,
+            HotkeyIdQuaternary,
             NativeMethods.MOD_ALT | NativeMethods.MOD_SHIFT | NativeMethods.MOD_NOREPEAT,
-            (uint)VK_S);
-        AppLog.Info($"RegisterHotKey(Thread, Tertiary Alt+Shift+S): {regThread3}");
+            (uint)VK_C);
+        AppLog.Info($"RegisterHotKey(Thread, Quaternary Alt+Shift+C): {regThread4}");
 
         // Also register on window handle if available
         if (_windowHandle != IntPtr.Zero)
@@ -169,12 +179,25 @@ public sealed class GlobalHotkeyManager : IDisposable
                 HotkeyIdSecondary,
                 NativeMethods.MOD_CONTROL | NativeMethods.MOD_SHIFT | NativeMethods.MOD_NOREPEAT,
                 (uint)VK_S);
+            NativeMethods.RegisterHotKey(
+                _windowHandle,
+                HotkeyIdTertiary,
+                NativeMethods.MOD_CONTROL | NativeMethods.MOD_SHIFT | NativeMethods.MOD_NOREPEAT,
+                (uint)VK_SPACE);
+            NativeMethods.RegisterHotKey(
+                _windowHandle,
+                HotkeyIdQuaternary,
+                NativeMethods.MOD_ALT | NativeMethods.MOD_SHIFT | NativeMethods.MOD_NOREPEAT,
+                (uint)VK_C);
         }
 
-        return _hookId != IntPtr.Zero || regThread1 || regThread2;
+        return _hookId != IntPtr.Zero || regThread1 || regThread2 || regThread3;
     }
 
-    private static bool IsKeyDown(int vk) => (GetAsyncKeyState(vk) & 0x8000) != 0;
+    private static bool IsKeyDown(int vk)
+    {
+        return ((GetAsyncKeyState(vk) & 0x8000) != 0) || ((NativeMethods.GetKeyState(vk) & 0x8000) != 0);
+    }
 
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
@@ -191,42 +214,51 @@ public sealed class GlobalHotkeyManager : IDisposable
                 else if (vkCode is VK_MENU or VK_LMENU or VK_RMENU) _altDown = true;
                 else if (vkCode is VK_LWIN or VK_RWIN) _winDown = true;
 
-                // Check triggers:
-                // 1. Configured target key (e.g. Space) with required modifiers
-                // 2. Fallback 'S' with Ctrl+Shift
-                bool isTargetKey = (vkCode == _targetVk);
-                bool isFallbackKey = (vkCode == VK_S);
+                bool ctrl = _ctrlDown || IsKeyDown(VK_CONTROL) || IsKeyDown(VK_LCONTROL) || IsKeyDown(VK_RCONTROL);
+                bool shift = _shiftDown || IsKeyDown(VK_SHIFT) || IsKeyDown(VK_LSHIFT) || IsKeyDown(VK_RSHIFT);
+                bool alt = _altDown || IsKeyDown(VK_MENU) || IsKeyDown(VK_LMENU) || IsKeyDown(VK_RMENU);
+                bool win = _winDown || IsKeyDown(VK_LWIN) || IsKeyDown(VK_RWIN);
 
-                if (isTargetKey || isFallbackKey)
+                bool isC = (vkCode == VK_C);
+                bool isS = (vkCode == VK_S);
+                bool isSpace = (vkCode == VK_SPACE);
+                bool isTarget = (vkCode == _targetVk);
+
+                if (ctrl && isC)
                 {
-                    bool ctrl = _ctrlDown || IsKeyDown(VK_CONTROL) || IsKeyDown(VK_LCONTROL) || IsKeyDown(VK_RCONTROL);
-                    bool shift = _shiftDown || IsKeyDown(VK_SHIFT) || IsKeyDown(VK_LSHIFT) || IsKeyDown(VK_RSHIFT);
-                    bool alt = _altDown || IsKeyDown(VK_MENU) || IsKeyDown(VK_LMENU) || IsKeyDown(VK_RMENU);
-                    bool win = _winDown || IsKeyDown(VK_LWIN) || IsKeyDown(VK_RWIN);
+                    AppLog.Info($"WH_KEYBOARD_LL detected 'C' key while Ctrl is down: shift={shift}, alt={alt}, win={win}");
+                }
 
-                    // Case A: User's chosen shortcut (default: Ctrl + Shift + Space)
-                    if (isTargetKey && ctrl == _reqCtrl && shift == _reqShift && alt == _reqAlt && win == _reqWin)
-                    {
-                        AppLog.Info($"Hotkey triggered via WH_KEYBOARD_LL (TargetKey: {vkCode})");
-                        OnTrigger();
-                        return (IntPtr)1; // Consume key to prevent typing into foreground application
-                    }
+                // Primary Trigger: Ctrl + Shift + C (or target key)
+                if ((isC || isTarget) && ctrl && shift && !alt && !win)
+                {
+                    AppLog.Info($"HOTKEY TRIGGERED: Ctrl + Shift + C (vk=0x{vkCode:X2})");
+                    OnTrigger();
+                    return (IntPtr)1; // Consume key
+                }
 
-                    // Case B: Universal fallback shortcut (Ctrl + Shift + S)
-                    if (isFallbackKey && ctrl && shift && !alt && !win)
-                    {
-                        AppLog.Info("Hotkey triggered via WH_KEYBOARD_LL (Fallback: Ctrl+Shift+S)");
-                        OnTrigger();
-                        return (IntPtr)1;
-                    }
+                // Secondary Trigger: Ctrl + Shift + S
+                if (isS && ctrl && shift && !alt && !win)
+                {
+                    AppLog.Info("HOTKEY TRIGGERED: Ctrl + Shift + S");
+                    OnTrigger();
+                    return (IntPtr)1;
+                }
 
-                    // Case C: Universal fallback shortcut (Alt + Shift + S)
-                    if (isFallbackKey && alt && shift && !ctrl && !win)
-                    {
-                        AppLog.Info("Hotkey triggered via WH_KEYBOARD_LL (Fallback: Alt+Shift+S)");
-                        OnTrigger();
-                        return (IntPtr)1;
-                    }
+                // Tertiary Trigger: Ctrl + Shift + Space
+                if (isSpace && ctrl && shift && !alt && !win)
+                {
+                    AppLog.Info("HOTKEY TRIGGERED: Ctrl + Shift + Space");
+                    OnTrigger();
+                    return (IntPtr)1;
+                }
+
+                // Quaternary Trigger: Alt + Shift + C
+                if (isC && alt && shift && !ctrl && !win)
+                {
+                    AppLog.Info("HOTKEY TRIGGERED: Alt + Shift + C");
+                    OnTrigger();
+                    return (IntPtr)1;
                 }
             }
             else if (msg == WM_KEYUP || msg == WM_SYSKEYUP)
@@ -246,11 +278,11 @@ public sealed class GlobalHotkeyManager : IDisposable
         var now = DateTime.UtcNow;
         if ((now - _lastTriggerTime).TotalMilliseconds < 350)
         {
-            return; // Debounce duplicate triggers
+            return; // Debounce
         }
         _lastTriggerTime = now;
 
-        AppLog.Info("GlobalHotkeyManager: Firing HotkeyPressed event to listeners.");
+        AppLog.Info("GlobalHotkeyManager: Triggering HotkeyPressed event.");
         try
         {
             HotkeyPressed?.Invoke(this, EventArgs.Empty);
@@ -266,7 +298,7 @@ public sealed class GlobalHotkeyManager : IDisposable
         if (msg.message == NativeMethods.WM_HOTKEY)
         {
             int id = msg.wParam.ToInt32();
-            if (id is HotkeyIdPrimary or HotkeyIdSecondary or HotkeyIdTertiary)
+            if (id is >= HotkeyIdPrimary and <= HotkeyIdQuinary)
             {
                 AppLog.Info($"Hotkey triggered via ComponentDispatcher WM_HOTKEY (id={id})");
                 OnTrigger();
@@ -280,7 +312,7 @@ public sealed class GlobalHotkeyManager : IDisposable
         if (msg == NativeMethods.WM_HOTKEY)
         {
             int id = wParam.ToInt32();
-            if (id is HotkeyIdPrimary or HotkeyIdSecondary or HotkeyIdTertiary)
+            if (id is >= HotkeyIdPrimary and <= HotkeyIdQuinary)
             {
                 AppLog.Info($"Hotkey triggered via HwndHook WM_HOTKEY (id={id})");
                 OnTrigger();
@@ -294,15 +326,13 @@ public sealed class GlobalHotkeyManager : IDisposable
     {
         try
         {
-            NativeMethods.UnregisterHotKey(IntPtr.Zero, HotkeyIdPrimary);
-            NativeMethods.UnregisterHotKey(IntPtr.Zero, HotkeyIdSecondary);
-            NativeMethods.UnregisterHotKey(IntPtr.Zero, HotkeyIdTertiary);
-
-            if (_windowHandle != IntPtr.Zero)
+            for (int id = HotkeyIdPrimary; id <= HotkeyIdQuinary; id++)
             {
-                NativeMethods.UnregisterHotKey(_windowHandle, HotkeyIdPrimary);
-                NativeMethods.UnregisterHotKey(_windowHandle, HotkeyIdSecondary);
-                NativeMethods.UnregisterHotKey(_windowHandle, HotkeyIdTertiary);
+                NativeMethods.UnregisterHotKey(IntPtr.Zero, id);
+                if (_windowHandle != IntPtr.Zero)
+                {
+                    NativeMethods.UnregisterHotKey(_windowHandle, id);
+                }
             }
         }
         catch { }

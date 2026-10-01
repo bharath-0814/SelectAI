@@ -36,6 +36,11 @@ public sealed class SettingsService : ISettingsService
                 if (loaded != null)
                 {
                     CurrentSettings = loaded;
+                    if (CurrentSettings.HotkeyKey == "Space" || string.IsNullOrWhiteSpace(CurrentSettings.HotkeyKey))
+                    {
+                        CurrentSettings.HotkeyKey = "C";
+                        SaveSettings();
+                    }
                     return;
                 }
             }

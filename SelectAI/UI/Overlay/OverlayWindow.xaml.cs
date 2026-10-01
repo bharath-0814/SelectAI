@@ -109,6 +109,8 @@ public partial class OverlayWindow : Window
                 var handle = new WindowInteropHelper(this).Handle;
                 if (handle != IntPtr.Zero)
                 {
+                    NativeMethods.SetWindowPos(handle, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
+                        NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_SHOWWINDOW);
                     NativeMethods.SetForegroundWindow(handle);
                     NativeMethods.BringWindowToTop(handle);
                 }

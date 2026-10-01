@@ -13,7 +13,7 @@ public class AppSettings
     public string LocalModelName { get; set; } = "llama3";
     public string SearchEngineUrl { get; set; } = "https://www.google.com/search?q={0}";
     public string HotkeyModifiers { get; set; } = "Control, Shift";
-    public string HotkeyKey { get; set; } = "Space";
+    public string HotkeyKey { get; set; } = "C";
     public bool StartWithWindows { get; set; } = false;
     public bool AutoShowToolbar { get; set; } = true;
     public bool EnableGlowAnimation { get; set; } = true;

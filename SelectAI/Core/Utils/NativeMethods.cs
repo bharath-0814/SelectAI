@@ -27,6 +27,14 @@ public static class NativeMethods
     public const uint SRCCOPY = 0x00CC0020;
     public const uint CAPTUREBLT = 0x40000000;
 
+    public static readonly IntPtr HWND_TOPMOST = new(-1);
+    public static readonly IntPtr HWND_NOTOPMOST = new(-2);
+    public static readonly IntPtr HWND_MESSAGE = new(-3);
+
+    public const uint SWP_NOSIZE = 0x0001;
+    public const uint SWP_NOMOVE = 0x0002;
+    public const uint SWP_SHOWWINDOW = 0x0040;
+
     [DllImport("user32.dll", SetLastError = true)]
     public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
 
@@ -81,4 +89,10 @@ public static class NativeMethods
 
     [DllImport("user32.dll")]
     public static extern bool BringWindowToTop(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+    [DllImport("user32.dll")]
+    public static extern short GetKeyState(int nVirtKey);
 }

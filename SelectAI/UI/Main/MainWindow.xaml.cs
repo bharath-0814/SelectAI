@@ -35,7 +35,7 @@ public partial class MainWindow : Window
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         bool hasCtrlShift = (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift);
-        if (hasCtrlShift && (e.Key == Key.Space || e.Key == Key.S))
+        if (hasCtrlShift && (e.Key == Key.C || e.Key == Key.S || e.Key == Key.Space))
         {
             e.Handled = true;
             OnStartSelectionClick(sender, e);

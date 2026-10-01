@@ -77,7 +77,7 @@ public partial class App : System.Windows.Application
                 ExtendedWindowStyle = NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE,
                 Width = 0,
                 Height = 0,
-                ParentWindow = IntPtr.Zero
+                ParentWindow = NativeMethods.HWND_MESSAGE
             };
             _messageHwndSource = new HwndSource(windowParams);
 
@@ -90,7 +90,7 @@ public partial class App : System.Windows.Application
             var key = _settingsService.CurrentSettings.HotkeyKey;
             AppLog.Info($"Registering global hotkeys. Configured: {mods} + {key}");
             bool hotkeyRegistered = _hotkeyManager.Register(mods, key);
-            AppLog.Info($"Global hotkeys registered: {hotkeyRegistered} (Ctrl+Shift+Space, Ctrl+Shift+S, Alt+Shift+S active)");
+            AppLog.Info($"Global hotkeys registered: {hotkeyRegistered} (Ctrl+Shift+C, Ctrl+Shift+S, Ctrl+Shift+Space, Alt+Shift+C active)");
 
             // 4. Initialize System Tray
             _trayIconManager = new TrayIconManager(

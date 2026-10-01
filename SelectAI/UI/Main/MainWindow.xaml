@@ -92,12 +92,14 @@
                                FontSize="13" Foreground="#94A3B8" />
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <TextBlock Text="Shortcuts: " FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
-                        <Border Background="#1E293B" BorderBrush="#38BDF8" BorderThickness="1" CornerRadius="6" Padding="8,2" Margin="0,0,8,0">
-                            <TextBlock x:Name="TxtHotkeyDisplay" Text="Ctrl + Shift + Space" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" />
+                        <Border Background="#1E293B" BorderBrush="#00F0FF" BorderThickness="1.5" CornerRadius="6" Padding="8,2" Margin="0,0,8,0">
+                            <TextBlock x:Name="TxtHotkeyDisplay" Text="Ctrl + Shift + C" FontSize="11" FontWeight="Bold" Foreground="#00F0FF" />
                         </Border>
-                        <TextBlock Text="or" FontSize="12" Foreground="#64748B" VerticalAlignment="Center" Margin="0,0,8,0" />
-                        <Border Background="#1E293B" BorderBrush="#A78BFA" BorderThickness="1" CornerRadius="6" Padding="8,2">
+                        <Border Background="#1E293B" BorderBrush="#A78BFA" BorderThickness="1" CornerRadius="6" Padding="8,2" Margin="0,0,8,0">
                             <TextBlock Text="Ctrl + Shift + S" FontSize="11" FontWeight="Bold" Foreground="#A78BFA" />
+                        </Border>
+                        <Border Background="#1E293B" BorderBrush="#38BDF8" BorderThickness="1" CornerRadius="6" Padding="8,2">
+                            <TextBlock Text="Ctrl + Shift + Space" FontSize="11" FontWeight="Bold" Foreground="#38BDF8" />
                         </Border>
                     </StackPanel>
                 </StackPanel>

@@ -53,7 +53,7 @@ public sealed class TrayIconManager : IDisposable
             _notifyIcon.ShowBalloonTip(
                 3000,
                 "SelectAI is Running",
-                "Press Ctrl + Shift + Space (or Ctrl + Shift + S) anywhere to start selecting!",
+                "Press Ctrl + Shift + C (or Ctrl + Shift + S) anywhere to start selecting!",
                 ToolTipIcon.Info);
         }
         catch { }
