@@ -37,7 +37,7 @@ public class SettingsServiceTests
 
         Assert.Equal(Core.Enums.SelectionMode.Freeform, settings.DefaultMode);
         Assert.Equal("Control, Shift", settings.HotkeyModifiers);
-        Assert.Equal("Space", settings.HotkeyKey);
+        Assert.Equal("C", settings.HotkeyKey);
         Assert.True(settings.AutoShowToolbar);
         Assert.True(settings.EnableGlowAnimation);
     }

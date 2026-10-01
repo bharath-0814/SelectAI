@@ -48,7 +48,10 @@ public partial class MainWindow : Window
             WindowState = WindowState.Normal;
             Show();
             Activate();
+            Topmost = true;
+            Topmost = false;
             Focus();
+            NativeMethods.ShowWindow(hwnd, NativeMethods.SW_RESTORE);
             NativeMethods.SetForegroundWindow(hwnd);
             handled = true;
         }

@@ -31,6 +31,11 @@ public partial class App : System.Windows.Application
     private TrayIconManager? _trayIconManager;
 
     private static System.Threading.Mutex? _singleInstanceMutex;
+    private const string WakeupEventName = "SelectAI_Wakeup_Event_9B87F1C4";
+    private EventWaitHandle? _wakeupEvent;
+    private System.Threading.Thread? _wakeupListenerThread;
+    private volatile bool _isAppExiting = false;
+
     private HwndSource? _messageHwndSource;
     private const string ShowAppWindowMessage = "SelectAI_ShowMainWindow_Message_8829";
     public static uint WmShowAppMessage { get; private set; }
@@ -42,13 +47,91 @@ public partial class App : System.Windows.Application
         WmShowAppMessage = NativeMethods.RegisterWindowMessage(ShowAppWindowMessage);
 
         const string mutexName = "SelectAI_SingleInstance_Mutex_9B87F1C4";
-        _singleInstanceMutex = new System.Threading.Mutex(true, mutexName, out bool isNewInstance);
+        bool isNewInstance = false;
+        try
+        {
+            _singleInstanceMutex = new System.Threading.Mutex(true, mutexName, out isNewInstance);
+            if (!isNewInstance)
+            {
+                // Verify whether another SelectAI process is genuinely alive
+                int currentPid = Environment.ProcessId;
+                var otherProcesses = Process.GetProcessesByName("SelectAI").Where(p => p.Id != currentPid).ToList();
+                if (otherProcesses.Count == 0)
+                {
+                    AppLog.Info("Mutex was held by an exited or dead process. Reclaiming primary instance.");
+                    isNewInstance = true;
+                }
+            }
+        }
+        catch (AbandonedMutexException)
+        {
+            AppLog.Info("Mutex was abandoned by a terminated process. Taking ownership as primary instance.");
+            isNewInstance = true;
+        }
+
         if (!isNewInstance)
         {
-            AppLog.Info("Another instance of SelectAI detected. Posting WM_SHOW_SELECTAI to bring it forward.");
+            AppLog.Info("Another active instance of SelectAI detected. Signaling wakeup event and bringing window forward.");
+
+            try
+            {
+                using var wakeupEv = EventWaitHandle.OpenExisting(WakeupEventName);
+                wakeupEv.Set();
+                AppLog.Info("Successfully signaled SelectAI wakeup event.");
+            }
+            catch (Exception ex)
+            {
+                AppLog.Info($"Could not open existing wakeup event: {ex.Message}");
+            }
+
             NativeMethods.PostMessage(NativeMethods.HWND_BROADCAST, WmShowAppMessage, IntPtr.Zero, IntPtr.Zero);
+
+            try
+            {
+                int curPid = Environment.ProcessId;
+                var otherProc = Process.GetProcessesByName("SelectAI").FirstOrDefault(p => p.Id != curPid);
+                if (otherProc != null && otherProc.MainWindowHandle != IntPtr.Zero)
+                {
+                    NativeMethods.ShowWindow(otherProc.MainWindowHandle, NativeMethods.SW_RESTORE);
+                    NativeMethods.SetForegroundWindow(otherProc.MainWindowHandle);
+                }
+            }
+            catch { }
+
             Shutdown();
             return;
+        }
+
+        // Start Wakeup Event Listener thread in primary instance
+        try
+        {
+            _wakeupEvent = new EventWaitHandle(false, EventResetMode.AutoReset, WakeupEventName);
+            _wakeupListenerThread = new System.Threading.Thread(() =>
+            {
+                while (!_isAppExiting)
+                {
+                    try
+                    {
+                        if (_wakeupEvent.WaitOne(400))
+                        {
+                            if (_isAppExiting) break;
+                            AppLog.Info("Wakeup event received from another instance -> bringing MainWindow forward.");
+                            Dispatcher.BeginInvoke(new Action(OpenMainWindow));
+                        }
+                    }
+                    catch (System.Threading.ThreadAbortException) { break; }
+                    catch { }
+                }
+            })
+            {
+                IsBackground = true,
+                Name = "SelectAI_WakeupListener"
+            };
+            _wakeupListenerThread.Start();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Failed to initialize WakeupEvent listener", ex);
         }
 
         // Keep app running in background (taskbar / system tray)
@@ -153,28 +236,42 @@ public partial class App : System.Windows.Application
     public void OpenMainWindow()
     {
         AppLog.Info($"OpenMainWindow called. Existing window: {_mainWindow != null}, Loaded: {_mainWindow?.IsLoaded}");
-        if (_mainWindow == null || !_mainWindow.IsLoaded)
+        try
         {
-            _mainWindow = new SelectAI.UI.Main.MainWindow(
-                _settingsService!,
-                _hotkeyManager,
-                startSelectionAction: TriggerSelection,
-                openSettingsAction: OpenSettings);
-            MainWindow = _mainWindow;
-            _mainWindow.Closed += (s, e) => _mainWindow = null;
-            _mainWindow.Show();
-            _mainWindow.Activate();
-            _mainWindow.Focus();
-        }
-        else
-        {
+            if (_mainWindow == null || !_mainWindow.IsLoaded)
+            {
+                _mainWindow = new SelectAI.UI.Main.MainWindow(
+                    _settingsService!,
+                    _hotkeyManager,
+                    startSelectionAction: TriggerSelection,
+                    openSettingsAction: OpenSettings);
+                MainWindow = _mainWindow;
+                _mainWindow.Closed += (s, e) => _mainWindow = null;
+            }
+
             if (_mainWindow.WindowState == WindowState.Minimized)
             {
                 _mainWindow.WindowState = WindowState.Normal;
             }
+
             _mainWindow.Show();
             _mainWindow.Activate();
+            _mainWindow.Topmost = true;
+            _mainWindow.Topmost = false;
             _mainWindow.Focus();
+
+            var hwnd = new WindowInteropHelper(_mainWindow).Handle;
+            if (hwnd != IntPtr.Zero)
+            {
+                NativeMethods.ShowWindow(hwnd, NativeMethods.SW_RESTORE);
+                NativeMethods.SetForegroundWindow(hwnd);
+            }
+
+            AppLog.Info($"OpenMainWindow completed. HWND: 0x{hwnd:X}");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Error opening MainWindow", ex);
         }
     }
 
@@ -194,6 +291,10 @@ public partial class App : System.Windows.Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _isAppExiting = true;
+        try { _wakeupEvent?.Set(); } catch { }
+        _wakeupEvent?.Dispose();
+
         _hotkeyManager?.Dispose();
         _messageHwndSource?.Dispose();
         _trayIconManager?.Dispose();
