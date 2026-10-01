@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SelectAI — The Modern Windows 11 AI Screen Selection Tool</title>
+    <meta name="description" content="A customizable alternative to Samsung Galaxy Book AI Select. Circle or trace anything on screen with a glowing neon tracer, run offline OCR, and Ask AI.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #090B10;
+            --surface: #121620;
+            --surface-border: #232B3E;
+            --accent: #00F0FF;
+            --accent-glow: rgba(0, 240, 255, 0.4);
+            --accent-dark: #0284C7;
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Ambient glowing background */
+        .ambient-glow {
+            position: fixed;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.15) 0%, rgba(2, 132, 199, 0.08) 45%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(16px);
+            background: rgba(9, 11, 16, 0.8);
+            border-bottom: 1px solid var(--surface-border);
+            z-index: 100;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .brand-badge {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #0284C7, #00F0FF);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--accent);
+        }
+
+        .btn-download-sm {
+            background: linear-gradient(135deg, #0284C7, #00F0FF);
+            color: #090B10;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 8px 18px;
+            border-radius: 99px;
+            text-decoration: none;
+            box-shadow: 0 0 12px var(--accent-glow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-download-sm:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 20px var(--accent);
+        }
+
+        /* Hero section */
+        .hero {
+            position: relative;
+            z-index: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 80px 24px 40px;
+            text-align: center;
+        }
+
+        .tagline-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            padding: 6px 16px;
+            border-radius: 99px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 24px;
+            box-shadow: 0 0 16px rgba(0, 240, 255, 0.1);
+        }
+
+        h1 {
+            font-size: clamp(38px, 6vw, 64px);
+            font-weight: 800;
+            letter-spacing: -1.5px;
+            line-height: 1.1;
+            margin-bottom: 24px;
+        }
+
+        h1 span {
+            background: linear-gradient(135deg, #F8FAFC 30%, #00F0FF 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-desc {
+            font-size: 18px;
+            color: var(--text-secondary);
+            max-width: 680px;
+            margin: 0 auto 36px;
+        }
+
+        .cta-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 48px;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #0284C7, #00F0FF);
+            color: #090B10;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 14px 32px;
+            border-radius: 12px;
+            text-decoration: none;
+            box-shadow: 0 8px 28px var(--accent-glow);
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 36px var(--accent);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--surface-border);
+            font-size: 16px;
+            font-weight: 600;
+            padding: 14px 28px;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #1C2333;
+            border-color: #38BDF8;
+        }
+
+        /* Interactive Canvas Demo Simulator */
+        .demo-container {
+            max-width: 880px;
+            margin: 0 auto 80px;
+            border-radius: 20px;
+            background: #10141D;
+            border: 1px solid var(--surface-border);
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 240, 255, 0.15);
+            position: relative;
+        }
+
+        .demo-header {
+            background: #161B26;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--surface-border);
+        }
+
+        .window-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #EF4444; }
+        .dot-yellow { background: #F59E0B; }
+        .dot-green { background: #10B981; }
+
+        .demo-canvas-wrap {
+            position: relative;
+            height: 420px;
+            cursor: crosshair;
+            user-select: none;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .demo-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(18, 22, 32, 0.85);
+            border: 1px solid var(--surface-border);
+            padding: 8px 18px;
+            border-radius: 99px;
+            font-size: 13px;
+            color: var(--accent);
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+        }
+
+        /* Feature grid */
+        .features {
+            max-width: 1100px;
+            margin: 0 auto 100px;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            border-radius: 16px;
+            padding: 28px;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: #38BDF8;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+
+        .feature-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        footer {
+            border-top: 1px solid var(--surface-border);
+            padding: 40px 24px;
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+
+    <nav>
+        <a href="#" class="brand">
+            <div class="brand-badge">✨</div>
+            SelectAI
+        </a>
+        <div class="nav-links">
+            <a href="https://github.com/bharath-0814/SelectAI" target="_blank" class="nav-link">GitHub</a>
+            <a href="https://github.com/bharath-0814/SelectAI/releases" target="_blank" class="nav-link">Releases</a>
+            <a href="https://github.com/bharath-0814/SelectAI/releases/download/v1.0.0/SelectAI-v1.0.0-win-x64.zip" class="btn-download-sm">Download v1.0.0</a>
+        </div>
+    </nav>
+
+    <main class="hero">
+        <div class="tagline-pill">✨ Windows 11 AI Screen Selection Tool</div>
+        <h1>Circle Anything on Screen.<br><span>Instant AI Intelligence.</span></h1>
+        <p class="hero-desc">
+            A native, customizable alternative to Samsung Galaxy Book AI Select.
+            Press <code style="color: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 15px;">Ctrl + Shift + Space</code>, draw a freeform glowing loop around anything, and let AI explain, search, or extract it.
+        </p>
+
+        <div class="cta-group">
+            <a href="https://github.com/bharath-0814/SelectAI/releases/download/v1.0.0/SelectAI-v1.0.0-win-x64.zip" class="btn-primary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download for Windows (Portable .zip)
+            </a>
+            <a href="https://github.com/bharath-0814/SelectAI" target="_blank" class="btn-secondary">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                View on GitHub
+            </a>
+        </div>
+
+        <!-- Interactive Browser Demo -->
+        <div class="demo-container">
+            <div class="demo-header">
+                <div class="window-dots">
+                    <div class="dot dot-red"></div>
+                    <div class="dot dot-yellow"></div>
+                    <div class="dot dot-green"></div>
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace;">
+                    Interactive Demo — Draw or circle below!
+                </div>
+                <div style="font-size: 11px; color: var(--accent); font-weight: 600;">
+                    LIVE CANVAS
+                </div>
+            </div>
+            <div class="demo-canvas-wrap" id="canvasWrap">
+                <canvas id="tracerCanvas"></canvas>
+                <div class="demo-hint" id="demoHint">🖱️ Click and drag anywhere to test the neon tracing effect</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="feature-card">
+            <div class="feature-icon">〰️</div>
+            <h3 class="feature-title">Galaxy Book Tracing Feel</h3>
+            <p class="feature-desc">Real-time Chaikin &amp; Catmull-Rom spline smoothing with a multi-layered neon bloom and animated star comet head.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h3 class="feature-title">100% Offline Native OCR</h3>
+            <p class="feature-desc">Extract text instantly using Windows 10/11 native <code style="color:#38BDF8">Windows.Media.Ocr</code>. Private, local, and zero internet needed.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3 class="feature-title">Multimodal Ask AI</h3>
+            <p class="feature-desc">Connect Google Gemini 2.0 Flash or OpenAI GPT-4o for live visual understanding, or use the built-in assistant.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3 class="feature-title">Google Search &amp; Lens</h3>
+            <p class="feature-desc">Launch text searches and visual reverse image lookups directly in your preferred system default browser.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🛡️</div>
+            <h3 class="feature-title">Pure User-Mode Windows APIs</h3>
+            <p class="feature-desc">Built with native Win32 user-mode APIs. Zero kernel drivers, completely safe, and DPAPI-encrypted credential storage.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">💻</div>
+            <h3 class="feature-title">Multi-Monitor &amp; High-DPI</h3>
+            <p class="feature-desc">Native PerMonitorV2 DPI awareness. Seamlessly captures across all displays whether at 100%, 125%, 150%, or 200% scaling.</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>SelectAI is an open-source project released under the MIT License.</p>
+        <p style="margin-top: 8px;">Created with ❤️ for the Windows community.</p>
+    </footer>
+
+    <script>
+        // Interactive Canvas Simulator for the Glowing Neon Tracing Effect
+        const canvas = document.getElementById('tracerCanvas');
+        const ctx = canvas.getContext('2d');
+        const hint = document.getElementById('demoHint');
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            drawInitialDemo();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        let points = [];
+        let isDrawing = false;
+
+        function drawInitialDemo() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw sample decorative content to circle
+            ctx.fillStyle = '#1A2130';
+            ctx.beginPath();
+            ctx.roundRect(canvas.width / 2 - 120, canvas.height / 2 - 50, 240, 100, 12);
+            ctx.fill();
+
+            ctx.fillStyle = '#64748B';
+            ctx.font = '14px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('NullReferenceException', canvas.width / 2, canvas.height / 2 - 10);
+            ctx.fillStyle = '#94A3B8';
+            ctx.font = '12px "Plus Jakarta Sans", sans-serif';
+            ctx.fillText('Try drawing a loop around this!', canvas.width / 2, canvas.height / 2 + 18);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            points = [];
+            hint.style.opacity = '0';
+            const rect = canvas.getBoundingClientRect();
+            points.push({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            points.push({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+            renderStroke();
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (!isDrawing) return;
+            isDrawing = false;
+        });
+
+        function renderStroke() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawInitialDemo();
+
+            if (points.length < 2) return;
+
+            // Layer 1: Outer soft bloom
+            ctx.lineWidth = 14;
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            drawPath(points);
+
+            // Layer 2: Mid vibrant neon
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.7)';
+            drawPath(points);
+
+            // Layer 3: Razor white core
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = '#FFFFFF';
+            drawPath(points);
+
+            // Layer 4: Leading comet star head
+            const head = points[points.length - 1];
+            const grad = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 14);
+            grad.addColorStop(0, '#FFFFFF');
+            grad.addColorStop(0.4, 'rgba(0, 240, 255, 0.8)');
+            grad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(head.x, head.y, 14, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawPath(pts) {
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) {
+                ctx.lineTo(pts[i].x, pts[i].y);
+            }
+            ctx.stroke();
+        }
+
+        setTimeout(resizeCanvas, 50);
+    </script>
+</body>
+</html>
