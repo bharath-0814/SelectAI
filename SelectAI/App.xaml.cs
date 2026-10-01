@@ -88,12 +88,9 @@ public partial class App : System.Windows.Application
             // Register default or configured hotkey
             var mods = _settingsService.CurrentSettings.HotkeyModifiers;
             var key = _settingsService.CurrentSettings.HotkeyKey;
+            AppLog.Info($"Registering global hotkeys. Configured: {mods} + {key}");
             bool hotkeyRegistered = _hotkeyManager.Register(mods, key);
-            if (!hotkeyRegistered)
-            {
-                Debug.WriteLine($"Could not register {mods} + {key}. Trying fallback Ctrl + Shift + Space...");
-                _hotkeyManager.Register("Control, Shift", "Space");
-            }
+            AppLog.Info($"Global hotkeys registered: {hotkeyRegistered} (Ctrl+Shift+Space, Ctrl+Shift+S, Alt+Shift+S active)");
 
             // 4. Initialize System Tray
             _trayIconManager = new TrayIconManager(
@@ -112,6 +109,7 @@ public partial class App : System.Windows.Application
         }
         catch (Exception ex)
         {
+            AppLog.Error("SelectAI failed during startup", ex);
             System.Windows.MessageBox.Show(
                 $"SelectAI failed to start:\n{ex.Message}\n\nStack:\n{ex.StackTrace}",
                 "SelectAI Startup Error",
@@ -124,21 +122,30 @@ public partial class App : System.Windows.Application
 
     private void OnHotkeyPressed(object? sender, EventArgs e)
     {
-        Dispatcher.Invoke(TriggerSelection);
+        AppLog.Info("App.OnHotkeyPressed received -> Dispatching TriggerSelection.");
+        Dispatcher.BeginInvoke(new Action(TriggerSelection));
     }
 
     public void TriggerSelection()
     {
-        if (_overlayWindow != null)
+        try
         {
-            if (_overlayWindow.IsVisible)
+            AppLog.Info($"App.TriggerSelection invoked. Overlay exists: {_overlayWindow != null}");
+            if (_overlayWindow != null)
             {
-                _overlayWindow.CloseOverlay();
+                if (_overlayWindow.IsVisible)
+                {
+                    _overlayWindow.CloseOverlay();
+                }
+                else
+                {
+                    _overlayWindow.StartSelection();
+                }
             }
-            else
-            {
-                _overlayWindow.StartSelection();
-            }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Error executing TriggerSelection", ex);
         }
     }
 

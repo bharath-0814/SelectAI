@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using Microsoft.Win32;
 using SelectAI.AI;
@@ -70,6 +71,8 @@ public partial class OverlayWindow : Window
     {
         try
         {
+            AppLog.Info("OverlayWindow.StartSelection() triggered.");
+
             // 1. Capture Virtual Desktop across all monitors
             _currentScreen?.Dispose();
             _currentScreen = _screenCapture.CaptureVirtualDesktop();
@@ -80,7 +83,10 @@ public partial class OverlayWindow : Window
             Width = SystemParameters.VirtualScreenWidth;
             Height = SystemParameters.VirtualScreenHeight;
 
-            ImgFrozenBackground.Source = _currentScreen.CachedWpfBitmap;
+            if (_currentScreen?.CachedWpfBitmap != null)
+            {
+                ImgFrozenBackground.Source = _currentScreen.CachedWpfBitmap;
+            }
 
             // 2. Set default mode from settings
             var defaultMode = _settingsService.CurrentSettings.DefaultMode;
@@ -93,14 +99,37 @@ public partial class OverlayWindow : Window
             ToastNotification.Visibility = Visibility.Collapsed;
             ModeBar.Visibility = Visibility.Visible;
 
+            Topmost = true;
             Show();
             Activate();
             Focus();
+
+            try
+            {
+                var handle = new WindowInteropHelper(this).Handle;
+                if (handle != IntPtr.Zero)
+                {
+                    NativeMethods.SetForegroundWindow(handle);
+                    NativeMethods.BringWindowToTop(handle);
+                }
+            }
+            catch { }
+
+            AppLog.Info("OverlayWindow shown and focused successfully.");
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to start selection: {ex.Message}");
-            CloseOverlay();
+            AppLog.Error("Failed to start selection", ex);
+            try
+            {
+                Show();
+                Activate();
+                ShowToast("Selection mode active (fallback mode)");
+            }
+            catch
+            {
+                CloseOverlay();
+            }
         }
     }
 
