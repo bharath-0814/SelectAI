@@ -4,6 +4,7 @@ using System.Windows.Interop;
 using SelectAI.AI;
 using SelectAI.Capture;
 using SelectAI.Core.Interfaces;
+using SelectAI.Core.Utils;
 using SelectAI.Hotkeys;
 using SelectAI.Ocr;
 using SelectAI.Search;
@@ -69,14 +70,14 @@ public partial class App : System.Windows.Application
                 _aiProviderFactory,
                 _settingsService);
 
-            // 3. Setup Message-Only Window for Global Hotkeys
+            // 3. Setup Hidden Top-Level Window for Global Hotkeys
             var windowParams = new HwndSourceParameters("SelectAIMessageWindow")
             {
                 WindowStyle = 0,
-                ExtendedWindowStyle = 0,
+                ExtendedWindowStyle = NativeMethods.WS_EX_TOOLWINDOW | NativeMethods.WS_EX_NOACTIVATE,
                 Width = 0,
                 Height = 0,
-                ParentWindow = new IntPtr(-3) // HWND_MESSAGE
+                ParentWindow = IntPtr.Zero
             };
             _messageHwndSource = new HwndSource(windowParams);
 

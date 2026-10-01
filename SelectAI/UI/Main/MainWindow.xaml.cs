@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Input;
 using SelectAI.Core.Enums;
 using SelectAI.Core.Interfaces;
 using SelectAI.Hotkeys;
@@ -27,7 +28,18 @@ public partial class MainWindow : Window
         _startSelectionAction = startSelectionAction;
         _openSettingsAction = openSettingsAction;
 
+        PreviewKeyDown += OnPreviewKeyDown;
         LoadState();
+    }
+
+    private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Space &&
+            (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift))
+        {
+            e.Handled = true;
+            OnStartSelectionClick(sender, e);
+        }
     }
 
     public void LoadState()

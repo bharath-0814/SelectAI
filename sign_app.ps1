@@ -27,10 +27,9 @@ $exportPath = "d:\AI  select\dist\SelectAI-SelfContained\SelectAI_Certificate.ce
 Export-Certificate -Cert $cert -FilePath $exportPath -Force | Out-Null
 Write-Host "Exported public certificate to $exportPath"
 
-# Trust locally on CurrentUser Root & TrustedPublisher
-Write-Host "Importing certificate into local CurrentUser Root & TrustedPublisher..."
-Import-Certificate -FilePath $exportPath -CertStoreLocation "Cert:\CurrentUser\Root" | Out-Null
-Import-Certificate -FilePath $exportPath -CertStoreLocation "Cert:\CurrentUser\TrustedPublisher" | Out-Null
+# Trust locally on CurrentUser TrustedPublisher & TrustedPeople (silent, no GUI prompt)
+certutil -user -addstore "TrustedPublisher" $exportPath | Out-Null
+certutil -user -addstore "TrustedPeople" $exportPath | Out-Null
 
 Write-Host "Verifying signature on target executable:"
-Get-AuthenticodeSignature "d:\AI  select\dist\SelectAI-SelfContained\SelectAI.exe" | Format-List
+Get-AuthenticodeSignature "d:\AI  select\dist\SelectAI-SelfContained\SelectAI.exe" | Format-List SignerCertificate, TimeStamperCertificate, Status
