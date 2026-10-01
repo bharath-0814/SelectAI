@@ -1,0 +1,32 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore Dependencies
+      run: dotnet restore SelectAI.sln
+
+    - name: Build Solution
+      run: dotnet build SelectAI.sln -c Release --no-restore
+
+    - name: Run Unit Tests
+      run: dotnet test SelectAI.Tests/SelectAI.Tests.csproj -c Release --no-build --verbosity normal
+
+    - name: Publish Executable
+      run: dotnet publish SelectAI/SelectAI.csproj -c Release -r win-x64 --self-contained false -o ./publish
