@@ -1,8 +1,10 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using SelectAI.Core.Enums;
 using SelectAI.Core.Interfaces;
+using SelectAI.Core.Utils;
 using SelectAI.Hotkeys;
 
 namespace SelectAI.UI.Main;
@@ -28,8 +30,29 @@ public partial class MainWindow : Window
         _startSelectionAction = startSelectionAction;
         _openSettingsAction = openSettingsAction;
 
+        Loaded += (s, e) =>
+        {
+            var source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
+            source?.AddHook(WndProc);
+        };
+
         PreviewKeyDown += OnPreviewKeyDown;
         LoadState();
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (App.WmShowAppMessage != 0 && (uint)msg == App.WmShowAppMessage)
+        {
+            AppLog.Info("MainWindow received WmShowAppMessage -> Restoring window.");
+            WindowState = WindowState.Normal;
+            Show();
+            Activate();
+            Focus();
+            NativeMethods.SetForegroundWindow(hwnd);
+            handled = true;
+        }
+        return IntPtr.Zero;
     }
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)

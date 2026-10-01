@@ -30,6 +30,7 @@ public static class NativeMethods
     public static readonly IntPtr HWND_TOPMOST = new(-1);
     public static readonly IntPtr HWND_NOTOPMOST = new(-2);
     public static readonly IntPtr HWND_MESSAGE = new(-3);
+    public static readonly IntPtr HWND_BROADCAST = new(0xffff);
 
     public const uint SWP_NOSIZE = 0x0001;
     public const uint SWP_NOMOVE = 0x0002;
@@ -95,4 +96,10 @@ public static class NativeMethods
 
     [DllImport("user32.dll")]
     public static extern short GetKeyState(int nVirtKey);
+
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+    public static extern uint RegisterWindowMessage(string lpString);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
 }

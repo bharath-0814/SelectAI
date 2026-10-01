@@ -7,7 +7,7 @@
         WindowStartupLocation="CenterScreen"
         Background="#0A0E18"
         Foreground="{StaticResource TextPrimaryBrush}"
-        Icon="../../Assets/app_icon.ico"
+        Icon="/Assets/app_icon.ico"
         ShowInTaskbar="True">
 
     <Grid Margin="24">
@@ -31,7 +31,7 @@
                     <Border.Effect>
                         <DropShadowEffect BlurRadius="12" Color="#00F0FF" Opacity="0.5" ShadowDepth="0" />
                     </Border.Effect>
-                    <Image Source="../../Assets/app_icon.png" Width="44" Height="44" RenderOptions.BitmapScalingMode="HighQuality" />
+                    <Image Source="/Assets/app_icon.png" Width="44" Height="44" RenderOptions.BitmapScalingMode="HighQuality" />
                 </Border>
 
                 <StackPanel VerticalAlignment="Center">

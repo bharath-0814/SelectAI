@@ -112,7 +112,13 @@ Copy-Item -Path $uninstallBat -Destination $downloadPkg -Force
 
 Write-Host "========================================="
 Write-Host "SelectAI Installed Successfully!"
-Write-Host "Launching installed SelectAI.exe..."
-Write-Host "========================================="
+Write-Host "Launching SelectAI on desktop..."
+Start-Process "explorer.exe" -ArgumentList "`"$exePath`""
 
-Start-Process -FilePath $exePath
+# 11. Create updated distribution zip
+$distZip = "d:\AI  select\dist\SelectAI-v1.0.0-win-x64.zip"
+$userZip = "C:\Users\bhara\Downloads\SelectAI-v1.0.0-win-x64.zip"
+if (Test-Path $distZip) { Remove-Item $distZip -Force }
+Compress-Archive -Path "$sourceDir\*" -DestinationPath $distZip -CompressionLevel Optimal
+Copy-Item $distZip $userZip -Force
+Write-Host "[OK] Updated distribution ZIP packages"

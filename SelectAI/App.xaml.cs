@@ -32,20 +32,21 @@ public partial class App : System.Windows.Application
 
     private static System.Threading.Mutex? _singleInstanceMutex;
     private HwndSource? _messageHwndSource;
+    private const string ShowAppWindowMessage = "SelectAI_ShowMainWindow_Message_8829";
+    public static uint WmShowAppMessage { get; private set; }
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
+        WmShowAppMessage = NativeMethods.RegisterWindowMessage(ShowAppWindowMessage);
+
         const string mutexName = "SelectAI_SingleInstance_Mutex_9B87F1C4";
         _singleInstanceMutex = new System.Threading.Mutex(true, mutexName, out bool isNewInstance);
         if (!isNewInstance)
         {
-            System.Windows.MessageBox.Show(
-                "SelectAI is already running in your taskbar and system tray.\n\nPress Ctrl + Shift + Space anywhere to start selecting, or click the SelectAI icon on your taskbar.",
-                "SelectAI is Already Running",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            AppLog.Info("Another instance of SelectAI detected. Posting WM_SHOW_SELECTAI to bring it forward.");
+            NativeMethods.PostMessage(NativeMethods.HWND_BROADCAST, WmShowAppMessage, IntPtr.Zero, IntPtr.Zero);
             Shutdown();
             return;
         }
@@ -151,6 +152,7 @@ public partial class App : System.Windows.Application
 
     public void OpenMainWindow()
     {
+        AppLog.Info($"OpenMainWindow called. Existing window: {_mainWindow != null}, Loaded: {_mainWindow?.IsLoaded}");
         if (_mainWindow == null || !_mainWindow.IsLoaded)
         {
             _mainWindow = new SelectAI.UI.Main.MainWindow(
@@ -158,8 +160,11 @@ public partial class App : System.Windows.Application
                 _hotkeyManager,
                 startSelectionAction: TriggerSelection,
                 openSettingsAction: OpenSettings);
+            MainWindow = _mainWindow;
             _mainWindow.Closed += (s, e) => _mainWindow = null;
             _mainWindow.Show();
+            _mainWindow.Activate();
+            _mainWindow.Focus();
         }
         else
         {
@@ -167,7 +172,9 @@ public partial class App : System.Windows.Application
             {
                 _mainWindow.WindowState = WindowState.Normal;
             }
+            _mainWindow.Show();
             _mainWindow.Activate();
+            _mainWindow.Focus();
         }
     }
 
