@@ -15,15 +15,18 @@ public sealed class TrayIconManager : IDisposable
     private readonly ISettingsService _settingsService;
     private readonly Action _startSelectionAction;
     private readonly Action _openSettingsAction;
+    private readonly Action _openMainWindowAction;
 
     public TrayIconManager(
         ISettingsService settingsService,
         Action startSelectionAction,
-        Action openSettingsAction)
+        Action openSettingsAction,
+        Action openMainWindowAction)
     {
         _settingsService = settingsService;
         _startSelectionAction = startSelectionAction;
         _openSettingsAction = openSettingsAction;
+        _openMainWindowAction = openMainWindowAction;
 
         _notifyIcon = new NotifyIcon
         {
@@ -32,7 +35,7 @@ public sealed class TrayIconManager : IDisposable
             Icon = CreateAppIcon()
         };
 
-        _notifyIcon.DoubleClick += (s, e) => _startSelectionAction();
+        _notifyIcon.DoubleClick += (s, e) => _openMainWindowAction();
         BuildContextMenu();
     }
 
@@ -62,10 +65,14 @@ public sealed class TrayIconManager : IDisposable
         menu.Items.Add(titleItem);
         menu.Items.Add(new ToolStripSeparator());
 
+        // Open Dashboard
+        var openItem = new ToolStripMenuItem("Open SelectAI Dashboard", null, (s, e) => _openMainWindowAction());
+        openItem.Font = new Font(menu.Font, System.Drawing.FontStyle.Bold);
+        menu.Items.Add(openItem);
+
         // Start Selection
         var shortcutText = $"{_settingsService.CurrentSettings.HotkeyModifiers} + {_settingsService.CurrentSettings.HotkeyKey}";
         var startItem = new ToolStripMenuItem($"Start Selection ({shortcutText})", null, (s, e) => _startSelectionAction());
-        startItem.Font = new Font(menu.Font, System.Drawing.FontStyle.Bold);
         menu.Items.Add(startItem);
 
         menu.Items.Add(new ToolStripSeparator());
@@ -169,6 +176,17 @@ public sealed class TrayIconManager : IDisposable
 
     private static Icon CreateAppIcon()
     {
+        try
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var icoPath = System.IO.Path.Combine(baseDir, "Assets", "app_icon.ico");
+            if (System.IO.File.Exists(icoPath))
+            {
+                return new Icon(icoPath, 32, 32);
+            }
+        }
+        catch { }
+
         using var bmp = new Bitmap(32, 32);
         using (var g = Graphics.FromImage(bmp))
         {

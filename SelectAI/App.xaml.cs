@@ -8,6 +8,7 @@ using SelectAI.Hotkeys;
 using SelectAI.Ocr;
 using SelectAI.Search;
 using SelectAI.Settings;
+using SelectAI.UI.Main;
 using SelectAI.UI.Overlay;
 using SelectAI.UI.Settings;
 using SelectAI.UI.Tray;
@@ -23,6 +24,7 @@ public partial class App : System.Windows.Application
     private AiProviderFactory? _aiProviderFactory;
 
     private OverlayWindow? _overlayWindow;
+    private MainWindow? _mainWindow;
     private SettingsWindow? _settingsWindow;
     private GlobalHotkeyManager? _hotkeyManager;
     private TrayIconManager? _trayIconManager;
@@ -39,7 +41,7 @@ public partial class App : System.Windows.Application
         if (!isNewInstance)
         {
             System.Windows.MessageBox.Show(
-                "SelectAI is already running in your system tray.\n\nPress Ctrl + Shift + Space anywhere to start selecting, or right-click the SelectAI icon in your taskbar system tray.",
+                "SelectAI is already running in your taskbar and system tray.\n\nPress Ctrl + Shift + Space anywhere to start selecting, or click the SelectAI icon on your taskbar.",
                 "SelectAI is Already Running",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
@@ -47,7 +49,7 @@ public partial class App : System.Windows.Application
             return;
         }
 
-        // Keep app running in background (system tray)
+        // Keep app running in background (taskbar / system tray)
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
         try
@@ -96,14 +98,15 @@ public partial class App : System.Windows.Application
             _trayIconManager = new TrayIconManager(
                 _settingsService,
                 startSelectionAction: TriggerSelection,
-                openSettingsAction: OpenSettings);
+                openSettingsAction: OpenSettings,
+                openMainWindowAction: OpenMainWindow);
 
-            // If not started in background mode, notify user and open Settings / Quick Start UI
+            // Always open MainWindow on normal launch so user sees the app on the taskbar and screen!
             bool isBackground = e.Args.Any(a => a.Equals("--background", StringComparison.OrdinalIgnoreCase));
             if (!isBackground)
             {
                 _trayIconManager.ShowReadyNotification();
-                OpenSettings();
+                OpenMainWindow();
             }
         }
         catch (Exception ex)
@@ -138,6 +141,28 @@ public partial class App : System.Windows.Application
         }
     }
 
+    public void OpenMainWindow()
+    {
+        if (_mainWindow == null || !_mainWindow.IsLoaded)
+        {
+            _mainWindow = new SelectAI.UI.Main.MainWindow(
+                _settingsService!,
+                _hotkeyManager,
+                startSelectionAction: TriggerSelection,
+                openSettingsAction: OpenSettings);
+            _mainWindow.Closed += (s, e) => _mainWindow = null;
+            _mainWindow.Show();
+        }
+        else
+        {
+            if (_mainWindow.WindowState == WindowState.Minimized)
+            {
+                _mainWindow.WindowState = WindowState.Normal;
+            }
+            _mainWindow.Activate();
+        }
+    }
+
     public void OpenSettings()
     {
         if (_settingsWindow == null || !_settingsWindow.IsLoaded)
@@ -158,6 +183,7 @@ public partial class App : System.Windows.Application
         _messageHwndSource?.Dispose();
         _trayIconManager?.Dispose();
         _overlayWindow?.Close();
+        _mainWindow?.Close();
 
         try
         {

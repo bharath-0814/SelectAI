@@ -1,10 +1,11 @@
 // SelectAI Service Worker — PWA & Auto-Update Engine
-const CACHE_NAME = 'selectai-cache-v1.0.0';
+const CACHE_NAME = 'selectai-cache-v1.0.1';
 const STATIC_ASSETS = [
     './',
     './index.html',
     './version.json',
-    './manifest.json'
+    './manifest.json',
+    './app_icon.png'
 ];
 
 // Install: Cache core application assets
