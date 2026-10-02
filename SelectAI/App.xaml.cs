@@ -248,6 +248,8 @@ public partial class App : System.Windows.Application
             CreateShortcut(targetExe, Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "SelectAI");
             string startMenuDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu), "Programs");
             CreateShortcut(targetExe, startMenuDir, "SelectAI");
+            string startupDir = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+            CreateShortcut(targetExe, startupDir, "SelectAI");
 
             AppLog.Info("Installation complete, restarting from target location.");
             Process.Start(targetExe);

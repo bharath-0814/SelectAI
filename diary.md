@@ -34,26 +34,33 @@ This file serves as a persistent memory and milestone tracker for the SelectAI p
 6. **Automated Build & Deployment Script**
    - Created `sync_dist.ps1` to stop the app, build a self-contained executable, sign it with Authenticode, and package it into a distributable ZIP file.
 
+7. **Self-Installing & Auto-Updating App Experience**
+   - Implemented `EnsureSelfInstalled()` in `App.xaml.cs`. When run from any folder outside `%LOCALAPPDATA%\Programs\SelectAI`, it automatically installs the executable, creates Desktop and Start Menu shortcuts, and adds a shortcut to the Windows **Startup folder** so the global hotkey (`Ctrl+Shift+C`) is always on after boot.
+   - Handles in-place updates by terminating prior instances and overwriting program files.
+
+8. **Samsung Galaxy AI Visuals & Auto-Snap**
+   - Implemented exact Galaxy AI visual style: deep translucent dim layer (`#A0000000`), cyan tracing glow, and instant auto-snapping of freeform gestures into clean rounded rectangles with multi-color gradient bloom borders.
+   - Restructured the floating action bar to strictly show the exact 3-pill options: `[ Copy ]`, `[ Share ]`, and `[ Save ]`.
+
+9. **Docked Split-Screen Browser Panel & Zero-API-Key Google Lens / Gemini**
+   - Built `SideSearchPanel.xaml` featuring an embedded `WebView2` control and animated slide-in from the right edge.
+   - Added smooth desktop left-shift animation (`-120px`) matching the Galaxy AI split-screen gesture.
+   - Created `GoogleLensService.cs` performing background multipart upload of the cropped selection to Google Lens, extracting the 303 redirect target URL with Gemini AI results, and seamlessly loading it into the side panel.
+   - Added browser switcher support (Chrome, Brave, Firefox, Edge, and "+ Add More" custom browser detection) and prominent "Show results in browser" button.
+
 ---
 
-## 🚀 Current Phase & Present Goals (In Progress)
+## 🚀 Current Phase & Present Goals
 
-### 1. Self-Installing & Auto-Updating App Experience
-- **Goal:** When a user extracts the ZIP and runs the app, it should automatically install itself into `%LOCALAPPDATA%\Programs\SelectAI`, add shortcuts to the Desktop and Start Menu, and restart from the installed location.
-- **Update Mechanism:** If a user downloads a newer version and runs it, the app should detect the existing installation, update the files, and launch the new version.
-
-### 2. Auto-Snap & Split-Screen UI (Samsung Galaxy AI Style)
-- **Auto-Snap:** When the user draws a freeform shape around an object, the app automatically calculates the bounding box and converts it into a clean rectangle.
-- **Split-Screen Chrome Dock:** Upon selection, the main desktop screen slightly shifts left, and a docked right-panel slides in. This panel contains a `WebView2` control natively rendering the Google Lens / Gemini URL, giving a seamless embedded browser experience.
+- **Distribution & Quality Assurance**: Verification of all components running smoothly on Windows 11 with PerMonitorV2 DPI awareness.
+- **Auto-Sync Distribution**: Release builds packaged into self-contained archives in `dist` and user Downloads directory.
 
 ---
 
 ## 🔮 Future Roadmap (To Do)
-- [ ] Complete the `App.xaml.cs` logic for the self-installing behavior.
-- [ ] Implement the `WebView2` integration in `OverlayWindow.xaml`.
-- [ ] Add sliding animations for the split-screen effect.
-- [ ] Refine the UI to look modern and visually pleasing (similar to Samsung One UI 8.5).
 - [ ] Add an auto-update checker (e.g., checking GitHub Releases on startup).
+- [ ] Add optional local OCR overlay toggle directly inside the side panel.
+- [ ] Add keyboard navigation shortcuts within the side search panel.
 
 ---
 *Note to AI Assistants: Please append new milestones to this file as they are achieved.*

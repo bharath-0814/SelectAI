@@ -28,7 +28,7 @@ public sealed class SelectionCanvas : FrameworkElement
     private bool _animationRunning = false;
 
     // Drawing pens & brushes
-    private static readonly SolidColorBrush DimMaskBrush = new(Color.FromArgb(115, 10, 14, 22)); // Subtle dark overlay
+    private static readonly SolidColorBrush DimMaskBrush = new(Color.FromArgb(160, 0, 0, 0)); // Darker, more elegant overlay
     private static readonly SolidColorBrush BloomBrush = new(Color.FromArgb(50, 0, 212, 255));   // Wide neon bloom
     private static readonly SolidColorBrush MidGlowBrush = new(Color.FromArgb(160, 0, 240, 255)); // Mid-range laser
     private static readonly SolidColorBrush CoreStrokeBrush = new(Color.FromArgb(255, 255, 255, 255)); // Pure luminous white core
@@ -69,7 +69,13 @@ public sealed class SelectionCanvas : FrameworkElement
         };
         CoreLaserPen.Freeze();
 
-        RectBorderPen = new Pen(new SolidColorBrush(Color.FromArgb(230, 0, 212, 255)), 2);
+        // Create a gradient border brush for the animated glow look
+        var gradientBrush = new LinearGradientBrush(
+            Color.FromArgb(255, 0, 212, 255), 
+            Color.FromArgb(255, 120, 255, 180), 
+            new Point(0, 0), new Point(1, 1));
+        gradientBrush.Freeze();
+        RectBorderPen = new Pen(gradientBrush, 3.5);
         RectBorderPen.Freeze();
     }
 
@@ -203,18 +209,6 @@ public sealed class SelectionCanvas : FrameworkElement
                 return;
             }
 
-            // Final smoothing pass
-            bool isClosed = GeometryHelper.IsClosedLoop(_rawPoints, toleranceDistance: 60f);
-            if (isClosed)
-            {
-                _smoothedPoints = GeometryHelper.SmoothClosedLoop(_rawPoints, iterations: 3);
-            }
-            else
-            {
-                // Auto-close loop if points form an enclosing gesture
-                _smoothedPoints = GeometryHelper.SmoothChaikin(_rawPoints, iterations: 3);
-            }
-
             var box = GeometryHelper.CalculateBoundingBox(_smoothedPoints);
             if (box.Width < 10 || box.Height < 10)
             {
@@ -268,28 +262,21 @@ public sealed class SelectionCanvas : FrameworkElement
         // 1. Compute Cutout Geometry
         Geometry? cutoutGeom = null;
 
-        if (_currentMode == SelectionMode.Freeform && _smoothedPoints.Count >= 3)
+        if (_isDrawing && _currentMode == SelectionMode.Freeform && _smoothedPoints.Count >= 3)
         {
-            var pathGeom = CreatePathGeometry(_smoothedPoints, isClosed: _selectionCompleted);
-            cutoutGeom = pathGeom;
+            cutoutGeom = CreatePathGeometry(_smoothedPoints, isClosed: false);
         }
-        else if (_currentMode != SelectionMode.Freeform && (_isDrawing || _selectionCompleted))
+        else if (_isDrawing && _currentMode != SelectionMode.Freeform)
         {
-            Rect rect;
-            if (_isDrawing)
-            {
-                double rx = Math.Min(_rectStart.X, _rectCurrent.X);
-                double ry = Math.Min(_rectStart.Y, _rectCurrent.Y);
-                double rw = Math.Max(1, Math.Abs(_rectStart.X - _rectCurrent.X));
-                double rh = Math.Max(1, Math.Abs(_rectStart.Y - _rectCurrent.Y));
-                rect = new Rect(rx, ry, rw, rh);
-            }
-            else
-            {
-                rect = CurrentBoundingBox;
-            }
-
-            cutoutGeom = new RectangleGeometry(rect, 8, 8);
+            double rx = Math.Min(_rectStart.X, _rectCurrent.X);
+            double ry = Math.Min(_rectStart.Y, _rectCurrent.Y);
+            double rw = Math.Max(1, Math.Abs(_rectStart.X - _rectCurrent.X));
+            double rh = Math.Max(1, Math.Abs(_rectStart.Y - _rectCurrent.Y));
+            cutoutGeom = new RectangleGeometry(new Rect(rx, ry, rw, rh), 16, 16);
+        }
+        else if (_selectionCompleted)
+        {
+            cutoutGeom = new RectangleGeometry(CurrentBoundingBox, 16, 16);
         }
 
         // 2. Draw Dimmed Mask with Cutout
@@ -304,9 +291,9 @@ public sealed class SelectionCanvas : FrameworkElement
         }
 
         // 3. Render Strokes and Glow Effects
-        if (_currentMode == SelectionMode.Freeform && _smoothedPoints.Count >= 2)
+        if (_currentMode == SelectionMode.Freeform && _smoothedPoints.Count >= 2 && !_selectionCompleted)
         {
-            var strokeGeom = CreatePathGeometry(_smoothedPoints, isClosed: _selectionCompleted);
+            var strokeGeom = CreatePathGeometry(_smoothedPoints, isClosed: false);
 
             // Layer 1: Wide neon bloom
             dc.DrawGeometry(null, OuterBloomPen, strokeGeom);
@@ -340,9 +327,9 @@ public sealed class SelectionCanvas : FrameworkElement
                 dc.DrawEllipse(Brushes.White, null, headPoint, 3.5, 3.5);
             }
         }
-        else if (_currentMode != SelectionMode.Freeform && (_isDrawing || _selectionCompleted))
+        else if (_selectionCompleted || (_currentMode != SelectionMode.Freeform && _isDrawing))
         {
-            Rect rect = _isDrawing
+            Rect rect = _isDrawing && _currentMode != SelectionMode.Freeform
                 ? new Rect(Math.Min(_rectStart.X, _rectCurrent.X),
                            Math.Min(_rectStart.Y, _rectCurrent.Y),
                            Math.Max(1, Math.Abs(_rectStart.X - _rectCurrent.X)),
@@ -350,12 +337,12 @@ public sealed class SelectionCanvas : FrameworkElement
                 : CurrentBoundingBox;
 
             // Outer soft glow
-            var rectGeom = new RectangleGeometry(rect, 8, 8);
+            var rectGeom = new RectangleGeometry(rect, 16, 16);
             dc.DrawGeometry(null, OuterBloomPen, rectGeom);
             dc.DrawGeometry(null, RectBorderPen, rectGeom);
 
             // Corner Accents (modern camera/viewfinder brackets)
-            DrawCornerBrackets(dc, rect);
+            DrawCornerBrackets(dc, rectGeom.Rect);
         }
     }
 

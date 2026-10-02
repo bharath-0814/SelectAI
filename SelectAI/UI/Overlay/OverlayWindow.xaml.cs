@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using Microsoft.Win32;
 using SelectAI.AI;
@@ -16,7 +17,6 @@ using SelectAI.Core.Utils;
 using SelectAI.Ocr;
 using SelectAI.Search;
 using SelectAI.Settings;
-using SelectAI.SmartActions;
 using Point = System.Windows.Point;
 using SelectionMode = SelectAI.Core.Enums.SelectionMode;
 
@@ -32,7 +32,6 @@ public partial class OverlayWindow : Window
 
     private CapturedScreen? _currentScreen;
     private SelectionRegion? _currentSelection;
-    private OcrResult? _currentOcrResult;
 
     public OverlayWindow(
         IScreenCapture screenCapture,
@@ -49,19 +48,14 @@ public partial class OverlayWindow : Window
         _aiProviderFactory = aiProviderFactory;
         _settingsService = settingsService;
 
-        // Wire toolbar events
-        Toolbar.AskAiRequested += OnToolbarAskAi;
-        Toolbar.GoogleSearchRequested += OnToolbarGoogleSearch;
-        Toolbar.GoogleLensRequested += OnToolbarGoogleLens;
-        Toolbar.ExtractTextRequested += OnToolbarExtractText;
-        Toolbar.TranslateRequested += OnToolbarTranslate;
+        // Wire floating pill toolbar events (Copy, Share, Save)
         Toolbar.CopyRequested += OnToolbarCopy;
+        Toolbar.ShareRequested += OnToolbarShare;
         Toolbar.SaveRequested += OnToolbarSave;
-        Toolbar.CloseRequested += (_, _) => CloseOverlay();
-        Toolbar.SmartActionRequested += OnToolbarSmartAction;
 
-        // Wire AI panel events
-        AiPanel.CloseRequested += (_, _) => AiPanel.Visibility = Visibility.Collapsed;
+        // Wire side search panel events
+        SearchSidePanel.CloseRequested += (_, _) => CloseOverlay();
+        SearchSidePanel.ShowInBrowserRequested += OnShowInBrowser;
 
         // Wire selection canvas
         OverlayCanvas.SelectionCompleted += OnSelectionFinished;
@@ -92,10 +86,10 @@ public partial class OverlayWindow : Window
             var defaultMode = _settingsService.CurrentSettings.DefaultMode;
             SetMode(defaultMode);
 
-            // 3. Reset UI states
+            // 3. Reset UI states & transforms
+            ResetTransforms();
             OverlayCanvas.ResetSelection();
             Toolbar.Visibility = Visibility.Collapsed;
-            AiPanel.Visibility = Visibility.Collapsed;
             ToastNotification.Visibility = Visibility.Collapsed;
             ModeBar.Visibility = Visibility.Visible;
 
@@ -135,21 +129,21 @@ public partial class OverlayWindow : Window
         }
     }
 
-    private void SetMode(SelectAI.Core.Enums.SelectionMode mode)
+    private void SetMode(SelectionMode mode)
     {
         OverlayCanvas.Mode = mode;
-        RbFreeform.IsChecked = (mode == SelectAI.Core.Enums.SelectionMode.Freeform);
-        RbRectangle.IsChecked = (mode == SelectAI.Core.Enums.SelectionMode.Rectangle);
-        RbText.IsChecked = (mode == SelectAI.Core.Enums.SelectionMode.Text);
-        RbImage.IsChecked = (mode == SelectAI.Core.Enums.SelectionMode.Image);
+        RbFreeform.IsChecked = (mode == SelectionMode.Freeform);
+        RbRectangle.IsChecked = (mode == SelectionMode.Rectangle);
+        RbText.IsChecked = (mode == SelectionMode.Text);
+        RbImage.IsChecked = (mode == SelectionMode.Image);
     }
 
     private void OnModeChanged(object sender, RoutedEventArgs e)
     {
-        if (RbFreeform.IsChecked == true) OverlayCanvas.Mode = SelectAI.Core.Enums.SelectionMode.Freeform;
-        else if (RbRectangle.IsChecked == true) OverlayCanvas.Mode = SelectAI.Core.Enums.SelectionMode.Rectangle;
-        else if (RbText.IsChecked == true) OverlayCanvas.Mode = SelectAI.Core.Enums.SelectionMode.Text;
-        else if (RbImage.IsChecked == true) OverlayCanvas.Mode = SelectAI.Core.Enums.SelectionMode.Image;
+        if (RbFreeform.IsChecked == true) OverlayCanvas.Mode = SelectionMode.Freeform;
+        else if (RbRectangle.IsChecked == true) OverlayCanvas.Mode = SelectionMode.Rectangle;
+        else if (RbText.IsChecked == true) OverlayCanvas.Mode = SelectionMode.Text;
+        else if (RbImage.IsChecked == true) OverlayCanvas.Mode = SelectionMode.Image;
     }
 
     private void OnCanvasMouseDown(object sender, MouseButtonEventArgs e)
@@ -157,7 +151,6 @@ public partial class OverlayWindow : Window
         if (e.LeftButton == MouseButtonState.Pressed)
         {
             Toolbar.Visibility = Visibility.Collapsed;
-            AiPanel.Visibility = Visibility.Collapsed;
             OverlayCanvas.HandleMouseDown(e.GetPosition(OverlayCanvas));
         }
     }
@@ -172,7 +165,7 @@ public partial class OverlayWindow : Window
         OverlayCanvas.HandleMouseUp(e.GetPosition(OverlayCanvas));
     }
 
-    private async void OnSelectionFinished(object? sender, List<PointF> points)
+    private void OnSelectionFinished(object? sender, List<PointF> points)
     {
         if (_currentScreen == null) return;
 
@@ -210,43 +203,34 @@ public partial class OverlayWindow : Window
             CroppedImageSource = ImageHelper.ToBitmapSource(cropped)
         };
 
-        // Reposition toolbar near selection
+        // Position pill toolbar right below the selection box
         PositionToolbar(box);
-
-        // Run OCR asynchronously
-        _currentOcrResult = await _ocrProvider.RecognizeTextAsync(cropped);
-
-        if (_currentOcrResult != null && _currentOcrResult.HasText)
-        {
-            var entities = SmartContentDetector.DetectEntities(_currentOcrResult.FullText);
-            Toolbar.SetDetectedEntity(entities.FirstOrDefault());
-
-            if (_settingsService.CurrentSettings.CopyOcrAutomatically)
-            {
-                System.Windows.Clipboard.SetText(_currentOcrResult.FullText);
-                ShowToast("OCR text copied to clipboard!");
-            }
-        }
-        else
-        {
-            Toolbar.SetDetectedEntity(null);
-        }
-
         Toolbar.Visibility = Visibility.Visible;
+
+        // Animate desktop shift left and open side panel (Samsung Galaxy AI split-screen)
+        OpenSidePanel();
+
+        // Upload to Google Lens and navigate WebView in side panel
+        var bytes = ImageHelper.ToPngBytes(cropped);
+        _ = Task.Run(async () =>
+        {
+            var lensUrl = await GoogleLensService.UploadImageAsync(bytes);
+            await Dispatcher.InvokeAsync(() => SearchSidePanel.NavigateToUrlAsync(lensUrl));
+        });
     }
 
     private void PositionToolbar(Rect selectionBounds)
     {
         Toolbar.UpdateLayout();
-        double tbWidth = Toolbar.ActualWidth > 0 ? Toolbar.ActualWidth : 480;
-        double tbHeight = Toolbar.ActualHeight > 0 ? Toolbar.ActualHeight : 48;
+        double tbWidth = 240;
+        double tbHeight = 42;
 
         // Horizontally center relative to selection
         double x = selectionBounds.Left + (selectionBounds.Width - tbWidth) / 2.0;
 
         // Clamp to virtual screen edges
         double minX = 16;
-        double maxX = ActualWidth - tbWidth - 16;
+        double maxX = Math.Max(minX, ActualWidth - 440 - tbWidth - 16);
         x = Math.Max(minX, Math.Min(maxX, x));
 
         // Vertically place below selection if space permits, otherwise above
@@ -264,88 +248,44 @@ public partial class OverlayWindow : Window
         Canvas.SetTop(Toolbar, y);
     }
 
-    private void OnToolbarAskAi(object? sender, EventArgs e)
+    private void OpenSidePanel()
     {
-        if (_currentSelection == null) return;
+        SidePanelContainer.Visibility = Visibility.Visible;
 
-        var activeProvider = _aiProviderFactory.GetCurrentProvider();
-        AiPanel.Setup(activeProvider, _currentSelection, _currentOcrResult?.FullText);
-
-        // Position AI panel beside or near toolbar
-        double tbX = Canvas.GetLeft(Toolbar);
-        double tbY = Canvas.GetTop(Toolbar);
-
-        double aiX = Math.Max(16, Math.Min(ActualWidth - 440, tbX));
-        double aiY = tbY + 54;
-        if (aiY + 380 > ActualHeight)
+        // Slide in from right (Galaxy AI style)
+        var panelAnim = new DoubleAnimation
         {
-            aiY = Math.Max(16, tbY - 380);
-        }
+            From = 450,
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(320),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        SidePanelTranslateTransform.BeginAnimation(TranslateTransform.XProperty, panelAnim);
 
-        Canvas.SetLeft(AiPanel, aiX);
-        Canvas.SetTop(AiPanel, aiY);
-        AiPanel.Visibility = Visibility.Visible;
+        // Shift frozen desktop slightly left
+        var shiftAnim = new DoubleAnimation
+        {
+            From = 0,
+            To = -120,
+            Duration = TimeSpan.FromMilliseconds(320),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        DesktopShiftTransform.BeginAnimation(TranslateTransform.XProperty, shiftAnim);
     }
 
-    private void OnToolbarGoogleSearch(object? sender, EventArgs e)
+    private void ResetTransforms()
     {
-        if (_currentOcrResult != null && _currentOcrResult.HasText)
-        {
-            _searchProvider.SearchText(_currentOcrResult.FullText);
-            CloseOverlay();
-        }
-        else if (_currentSelection?.CroppedBitmap != null)
-        {
-            var bytes = ImageHelper.ToPngBytes(_currentSelection.CroppedBitmap);
-            _searchProvider.SearchImage(bytes);
-            CloseOverlay();
-        }
-        else
-        {
-            _searchProvider.SearchText("");
-            CloseOverlay();
-        }
+        DesktopShiftTransform.BeginAnimation(TranslateTransform.XProperty, null);
+        DesktopShiftTransform.X = 0;
+        SidePanelTranslateTransform.BeginAnimation(TranslateTransform.XProperty, null);
+        SidePanelTranslateTransform.X = 450;
+        SidePanelContainer.Visibility = Visibility.Collapsed;
     }
 
-    private void OnToolbarGoogleLens(object? sender, EventArgs e)
+    private void OnShowInBrowser(object? sender, string url)
     {
-        if (_currentSelection?.CroppedBitmap != null)
-        {
-            var bytes = ImageHelper.ToPngBytes(_currentSelection.CroppedBitmap);
-            _searchProvider.SearchImage(bytes);
-            CloseOverlay();
-        }
-    }
-
-    private void OnToolbarExtractText(object? sender, EventArgs e)
-    {
-        if (_currentOcrResult != null && _currentOcrResult.HasText)
-        {
-            System.Windows.Clipboard.SetText(_currentOcrResult.FullText);
-            ShowToast("Text extracted & copied to clipboard!");
-        }
-        else
-        {
-            ShowToast("No text recognized in this area.");
-        }
-    }
-
-    private void OnToolbarTranslate(object? sender, EventArgs e)
-    {
-        if (_currentOcrResult != null && _currentOcrResult.HasText)
-        {
-            var encoded = Uri.EscapeDataString(_currentOcrResult.FullText);
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = $"https://translate.google.com/?sl=auto&tl=en&text={encoded}&op=translate",
-                UseShellExecute = true
-            });
-            CloseOverlay();
-        }
-        else
-        {
-            ShowToast("No text available to translate.");
-        }
+        BrowserHelper.OpenUrl(url, SearchSidePanel.SelectedBrowserId);
+        CloseOverlay();
     }
 
     private void OnToolbarCopy(object? sender, EventArgs e)
@@ -357,11 +297,20 @@ public partial class OverlayWindow : Window
         }
     }
 
+    private void OnToolbarShare(object? sender, EventArgs e)
+    {
+        if (_currentSelection?.CroppedImageSource != null)
+        {
+            System.Windows.Clipboard.SetImage(_currentSelection.CroppedImageSource);
+            ShowToast("Image copied to clipboard for sharing!");
+        }
+    }
+
     private void OnToolbarSave(object? sender, EventArgs e)
     {
         if (_currentSelection?.CroppedBitmap == null) return;
 
-        var dlg = new Microsoft.Win32.SaveFileDialog
+        var dlg = new SaveFileDialog
         {
             Filter = "PNG Image (*.png)|*.png|JPEG Image (*.jpg)|*.jpg",
             FileName = $"SelectAI_{DateTime.Now:yyyyMMdd_HHmmss}.png"
@@ -378,33 +327,6 @@ public partial class OverlayWindow : Window
             {
                 ShowToast($"Save failed: {ex.Message}");
             }
-        }
-    }
-
-    private void OnToolbarSmartAction(object? sender, DetectedEntity entity)
-    {
-        switch (entity.Type)
-        {
-            case ContentType.Url:
-                Process.Start(new ProcessStartInfo { FileName = entity.Value, UseShellExecute = true });
-                CloseOverlay();
-                break;
-            case ContentType.Email:
-                Process.Start(new ProcessStartInfo { FileName = $"mailto:{entity.Value}", UseShellExecute = true });
-                CloseOverlay();
-                break;
-            case ContentType.PhoneNumber:
-                System.Windows.Clipboard.SetText(entity.Value);
-                ShowToast("Phone copied to clipboard!");
-                break;
-            case ContentType.Code:
-                OnToolbarAskAi(this, EventArgs.Empty);
-                _ = AiPanel.AskQuestionAsync("Explain this code, point out any bugs or issues, and provide suggested improvements.");
-                break;
-            case ContentType.SearchQuery:
-                _searchProvider.SearchText(entity.Value);
-                CloseOverlay();
-                break;
         }
     }
 
@@ -453,10 +375,10 @@ public partial class OverlayWindow : Window
 
     public void CloseOverlay()
     {
+        ResetTransforms();
         Hide();
         OverlayCanvas.ResetSelection();
         Toolbar.Visibility = Visibility.Collapsed;
-        AiPanel.Visibility = Visibility.Collapsed;
         ToastNotification.Visibility = Visibility.Collapsed;
         _currentScreen?.Dispose();
         _currentScreen = null;

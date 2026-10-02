@@ -13,50 +13,68 @@
         Focusable="True"
         Cursor="Cross">
     <Grid x:Name="RootGrid" ClipToBounds="True">
-        <!-- Layer 1: Frozen Desktop Background -->
-        <Image x:Name="ImgFrozenBackground" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+        <!-- Main Screen Container (Smoothly shifts left when Galaxy AI side panel docks) -->
+        <Grid x:Name="DesktopContainer">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="DesktopShiftTransform" X="0" />
+            </Grid.RenderTransform>
 
-        <!-- Layer 2: Interactive High-Speed Selection Canvas -->
-        <overlay:SelectionCanvas x:Name="OverlayCanvas"
-                                 MouseDown="OnCanvasMouseDown"
-                                 MouseMove="OnCanvasMouseMove"
-                                 MouseUp="OnCanvasMouseUp" />
+            <!-- Layer 1: Frozen Desktop Background -->
+            <Image x:Name="ImgFrozenBackground" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
 
-        <!-- Layer 3: Top Mode Switcher Capsule -->
-        <Border x:Name="ModeBar"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Top"
-                Margin="0,24,0,0"
-                Background="#D9161922"
-                BorderBrush="{StaticResource SurfaceBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="20"
-                Padding="6,4"
-                Effect="{StaticResource SubtleShadow}">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <RadioButton x:Name="RbFreeform" Content="〰️ Freeform" Style="{StaticResource ModePillButton}" IsChecked="True" Checked="OnModeChanged" ToolTip="Circle or trace around anything (Key: 1)" />
-                <RadioButton x:Name="RbRectangle" Content="🔲 Rectangle" Style="{StaticResource ModePillButton}" Margin="4,0,0,0" Checked="OnModeChanged" ToolTip="Select rectangular region (Key: 2)" />
-                <RadioButton x:Name="RbText" Content="📝 Text" Style="{StaticResource ModePillButton}" Margin="4,0,0,0" Checked="OnModeChanged" ToolTip="Select text for OCR (Key: 3)" />
-                <RadioButton x:Name="RbImage" Content="🖼️ Image" Style="{StaticResource ModePillButton}" Margin="4,0,0,0" Checked="OnModeChanged" ToolTip="Select image region (Key: 4)" />
+            <!-- Layer 2: Interactive High-Speed Selection Canvas with Galaxy AI Glow & Auto-Snap -->
+            <overlay:SelectionCanvas x:Name="OverlayCanvas"
+                                     MouseDown="OnCanvasMouseDown"
+                                     MouseMove="OnCanvasMouseMove"
+                                     MouseUp="OnCanvasMouseUp" />
 
-                <!-- Hint Divider -->
-                <Rectangle Width="1" Height="16" Fill="{StaticResource SurfaceBorderBrush}" Margin="8,0" />
+            <!-- Layer 3: Top Mode Switcher Capsule -->
+            <Border x:Name="ModeBar"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Top"
+                    Margin="0,24,0,0"
+                    Background="#D9161922"
+                    BorderBrush="{StaticResource SurfaceBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="20"
+                    Padding="6,4"
+                    Effect="{StaticResource SubtleShadow}">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <RadioButton x:Name="RbFreeform" Content="〰️ Circle / Freeform" Style="{StaticResource ModePillButton}" IsChecked="True" Checked="OnModeChanged" ToolTip="Circle or trace around anything (Key: 1)" />
+                    <RadioButton x:Name="RbRectangle" Content="🔲 Rectangle" Style="{StaticResource ModePillButton}" Margin="4,0,0,0" Checked="OnModeChanged" ToolTip="Select rectangular region (Key: 2)" />
+                    <RadioButton x:Name="RbText" Content="📝 Text" Style="{StaticResource ModePillButton}" Margin="4,0,0,0" Checked="OnModeChanged" ToolTip="Select text for OCR (Key: 3)" />
+                    <RadioButton x:Name="RbImage" Content="🖼️ Image" Style="{StaticResource ModePillButton}" Margin="4,0,0,0" Checked="OnModeChanged" ToolTip="Select image region (Key: 4)" />
 
-                <!-- ESC Hint -->
-                <TextBlock Text="Esc to exit" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
-            </StackPanel>
-        </Border>
+                    <!-- Hint Divider -->
+                    <Rectangle Width="1" Height="16" Fill="{StaticResource SurfaceBorderBrush}" Margin="8,0" />
 
-        <!-- Layer 4: Absolute Placement Canvas for Floating Toolbar and AI Panel -->
-        <Canvas x:Name="FloatingCanvas">
-            <!-- Floating Toolbar -->
-            <overlay:FloatingToolbar x:Name="Toolbar" Visibility="Collapsed" />
+                    <!-- ESC Hint -->
+                    <TextBlock Text="Esc to exit" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0" />
+                </StackPanel>
+            </Border>
 
-            <!-- Floating Ask AI Card -->
-            <ai:AskAiWindow x:Name="AiPanel" Visibility="Collapsed" />
-        </Canvas>
+            <!-- Layer 4: Absolute Placement Canvas for Floating Action Bar (Copy, Share, Save) -->
+            <Canvas x:Name="FloatingCanvas">
+                <!-- Floating Toolbar with strictly Copy, Share, Save -->
+                <overlay:FloatingToolbar x:Name="Toolbar" Visibility="Collapsed" />
+            </Canvas>
+        </Grid>
 
-        <!-- Layer 5: Toast Confirmation Notification -->
+        <!-- Layer 5: Docked Right Side Search Panel (Samsung Galaxy AI Style) -->
+        <Grid x:Name="SidePanelContainer"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Stretch"
+              Width="440"
+              Visibility="Collapsed">
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="SidePanelTranslateTransform" X="450" />
+            </Grid.RenderTransform>
+            <overlay:SideSearchPanel x:Name="SearchSidePanel"
+                                     HorizontalAlignment="Stretch"
+                                     VerticalAlignment="Stretch" />
+        </Grid>
+
+        <!-- Layer 6: Toast Confirmation Notification -->
         <Border x:Name="ToastNotification"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Bottom"
