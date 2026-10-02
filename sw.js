@@ -1,5 +1,5 @@
 // SelectAI Service Worker — PWA & Auto-Update Engine
-const CACHE_NAME = 'selectai-cache-v1.0.1';
+const CACHE_NAME = 'selectai-cache-v1.1.0';
 const STATIC_ASSETS = [
     './',
     './index.html',

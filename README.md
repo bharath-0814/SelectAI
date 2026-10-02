@@ -1,32 +1,37 @@
 # SelectAI — Screen Selection & AI Assistant
 
 [![Live Website](https://img.shields.io/badge/Website-select--ai--bay.vercel.app-00F0FF?style=for-the-badge&logo=vercel)](https://select-ai-bay.vercel.app)
-[![Download Release](https://img.shields.io/github/v/release/bharath-0814/SelectAI?style=for-the-badge&color=0284C7&label=Download%20v1.0.0)](https://github.com/bharath-0814/SelectAI/releases/latest)
+[![Download Release](https://img.shields.io/github/v/release/bharath-0814/SelectAI?style=for-the-badge&color=0284C7&label=Download%20v1.1.0)](https://github.com/bharath-0814/SelectAI/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
-**SelectAI** is a premium, native Windows 11 desktop utility inspired by Samsung Galaxy Book AI Select. It allows you to press a global hotkey (`Ctrl + Shift + Space`) from anywhere in the operating system, draw or circle anything on your screen with a glowing neon tracer, and perform intelligent actions on the selected content.
+**SelectAI** is a premium, native Windows 11 desktop utility inspired by Samsung Galaxy Book AI Select and Google's Circle to Search. It allows you to press a global hotkey (`Ctrl + Shift + C`) from anywhere in the operating system, draw or circle anything on your screen with a glowing neon tracer, fine-tune the selection with 4 corner drag handles, and view instant AI search results in a docked split-screen browser panel.
 
 🌐 **Live Showcase & Interactive Demo**: [https://select-ai-bay.vercel.app](https://select-ai-bay.vercel.app)  
-📦 **Download Standalone .zip**: [SelectAI-v1.0.0-win-x64.zip](https://github.com/bharath-0814/SelectAI/releases/download/v1.0.0/SelectAI-v1.0.0-win-x64.zip)
+📦 **Download Standalone .zip**: [SelectAI-v1.0.0-win-x64.zip](https://github.com/bharath-0814/SelectAI/releases/download/v1.0.0/SelectAI-v1.0.0-win-x64.zip) *(72 MB)*
 
 ---
 
 ## ✨ Features
 
+- **Interactive 4-Corner Drag Handles**:
+  - Auto-snaps freeform circling into a clean rounded rectangle with glowing gradient borders.
+  - 4 circular drag handles at each corner allow bidirectional scaling and fine-tuning in real time.
+  - Floating pill action bar (`[ Copy ] [ Share ] [ Save ]`) automatically moves along with the handles.
+- **Zero-Friction Re-Drawing**:
+  - Click or drag anywhere outside the corner handles to immediately start a fresh circle with zero modal resets.
+- **Docked Split-Screen Browser Panel**:
+  - The desktop smoothly shifts left (`-120px`), and a docked right-hand browser panel slides in.
+  - Powered by embedded Microsoft Edge WebView2 with Google Lens & Gemini AI visual search.
+  - Built-in browser switcher (`Chrome`, `Brave`, `Firefox`, `Edge`, and `+ Add More`).
 - **Signature Freeform Circle / Trace Selection**:
-  - Draw a circle, ellipse, or irregular loop around any UI element, error message, or image.
-  - Real-time anti-aliased Catmull-Rom / Chaikin spline smoothing eliminates mouse jitters.
-  - Multi-layer luminous neon stroke: outer bloom halo, electric cyan mid-layer, razor-sharp white core, and a trailing star comet effect.
-  - Dynamic cutout effect: the circled region is bright and crystal-clear while the rest of the screen is softly dimmed.
-- **Multiple Selection Modes**:
-  - 〰️ **Freeform**: Freehand drawing and circling.
-  - 🔲 **Rectangle**: Standard rectangular crop with camera brackets.
-  - 📝 **Text**: Optimizes focus for immediate text recognition.
-  - 🖼️ **Image**: Visual capture mode.
-  - Switch quickly via UI capsule or keyboard keys `1`, `2`, `3`, `4`.
+  - Real-time anti-aliased Chaikin spline smoothing eliminates mouse jitters.
+  - Multi-layer luminous neon stroke: outer bloom halo, electric cyan mid-layer, razor-sharp white core, and animated leading particle head.
 - **System-Wide Global Hotkey**:
-  - Default: `Ctrl + Shift + Space`.
-  - Operates system-wide across all applications, games, and full-screen windows using Windows user-mode Win32 `RegisterHotKey`.
+  - Default: `Ctrl + Shift + C`.
+  - Operates system-wide across all applications, games, and full-screen windows.
+- **Clean 2-File Single-File Distribution**:
+  - Bundled as a standalone single-file executable (`SelectAI.exe` + `README.txt`).
+  - Automatically installs shortcuts to Desktop, Start Menu, and Windows Startup.
 - **Offline High-Performance Windows Native OCR**:
   - Powered by Windows 10/11 native `Windows.Media.Ocr.OcrEngine`.
   - 100% offline, local, private, and instantaneous.

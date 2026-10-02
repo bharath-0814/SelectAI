@@ -1,16 +1,17 @@
 {
-  "version": "1.0.0",
-  "tag": "v1.0.0",
-  "name": "SelectAI v1.0.0",
-  "releaseDate": "2026-10-01",
+  "version": "1.1.0",
+  "tag": "v1.1.0",
+  "name": "SelectAI v1.1.0 - Galaxy AI & Interactive Drag Handles Update",
+  "releaseDate": "2026-10-02",
+  "fileSize": "72 MB",
   "downloadUrl": "https://github.com/bharath-0814/SelectAI/releases/download/v1.0.0/SelectAI-v1.0.0-win-x64.zip",
   "changelog": [
-    "Signature freeform circle and trace selection with real-time spline smoothing",
-    "Animated Galaxy AI multi-color glowing neon trail",
-    "Offline Windows Native OCR via Windows.Media.Ocr",
-    "Multimodal Ask AI with Google Gemini and OpenAI GPT-4o",
-    "Google Search and Google Lens in default browser",
-    "Windows DPAPI encrypted credential storage",
-    "PWA Service Worker update system"
+    "Interactive 4-corner drag handles for real-time bidirectional resizing and fine-tuning",
+    "Zero-friction re-drawing: click or drag anywhere to immediately start a fresh circle",
+    "Docked split-screen browser side panel with embedded Edge WebView2 and browser switcher (Chrome, Brave, Firefox, Edge, Custom)",
+    "Direct zero-API-key Google Lens and Gemini AI visual & text recognition",
+    "Clean, intact rectangular framing preserving 100% of text and visual details",
+    "Self-installing single-file distribution (SelectAI.exe + README.txt) with Desktop and Startup shortcuts",
+    "Non-blocking window lifecycle: pressing Win+D or Alt+Tab smoothly yields focus without locking screen"
   ]
 }
