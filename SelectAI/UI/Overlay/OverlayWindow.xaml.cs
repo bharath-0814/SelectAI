@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -24,6 +25,12 @@ namespace SelectAI.UI.Overlay;
 
 public partial class OverlayWindow : Window
 {
+    [DllImport("user32.dll")]
+    private static extern bool IsChild(IntPtr hWndParent, IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
     private readonly IScreenCapture _screenCapture;
     private readonly IOcrProvider _ocrProvider;
     private readonly ISearchProvider _searchProvider;
@@ -59,6 +66,29 @@ public partial class OverlayWindow : Window
 
         // Wire selection canvas
         OverlayCanvas.SelectionCompleted += OnSelectionFinished;
+        OverlayCanvas.BoundingBoxChanged += (s, box) => PositionToolbar(box);
+
+        // Wire window deactivation for fluid app switching and Win+D
+        Deactivated += OnWindowDeactivated;
+    }
+
+    private void OnWindowDeactivated(object? sender, EventArgs e)
+    {
+        try
+        {
+            var myHwnd = new WindowInteropHelper(this).Handle;
+            var fgHwnd = GetForegroundWindow();
+
+            // If focus moved to desktop or another application (Win+D, Alt+Tab, Taskbar click)
+            if (fgHwnd != IntPtr.Zero && fgHwnd != myHwnd && !IsChild(myHwnd, fgHwnd))
+            {
+                CloseOverlay();
+            }
+        }
+        catch
+        {
+            CloseOverlay();
+        }
     }
 
     public void StartSelection()
@@ -97,19 +127,6 @@ public partial class OverlayWindow : Window
             Show();
             Activate();
             Focus();
-
-            try
-            {
-                var handle = new WindowInteropHelper(this).Handle;
-                if (handle != IntPtr.Zero)
-                {
-                    NativeMethods.SetWindowPos(handle, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
-                        NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_SHOWWINDOW);
-                    NativeMethods.SetForegroundWindow(handle);
-                    NativeMethods.BringWindowToTop(handle);
-                }
-            }
-            catch { }
 
             AppLog.Info("OverlayWindow shown and focused successfully.");
         }
@@ -155,7 +172,7 @@ public partial class OverlayWindow : Window
         }
     }
 
-    private void OnCanvasMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    private void OnCanvasMouseMove(object sender, MouseEventArgs e)
     {
         OverlayCanvas.HandleMouseMove(e.GetPosition(OverlayCanvas));
     }
@@ -181,16 +198,8 @@ public partial class OverlayWindow : Window
 
         var physicalPoints = points.Select(p => new PointF((float)(p.X * scaleX), (float)(p.Y * scaleY))).ToList();
 
-        // Crop image from frozen full bitmap
-        Bitmap cropped;
-        if (OverlayCanvas.Mode == SelectionMode.Freeform)
-        {
-            cropped = _screenCapture.CropFreeform(_currentScreen.FullBitmap, physicalPoints, boundingBoxF);
-        }
-        else
-        {
-            cropped = _screenCapture.CropRegion(_currentScreen.FullBitmap, boundingBoxF);
-        }
+        // Crop clean intact rectangular region (Samsung Galaxy AI / Circle to Search standard)
+        Bitmap cropped = _screenCapture.CropRegion(_currentScreen.FullBitmap, boundingBoxF);
 
         _currentSelection?.Dispose();
         _currentSelection = new SelectionRegion
@@ -252,6 +261,9 @@ public partial class OverlayWindow : Window
     {
         SidePanelContainer.Visibility = Visibility.Visible;
 
+        // Yield modal topmost lock so other apps or taskbar clicks can activate seamlessly
+        Topmost = false;
+
         // Slide in from right (Galaxy AI style)
         var panelAnim = new DoubleAnimation
         {
@@ -292,7 +304,7 @@ public partial class OverlayWindow : Window
     {
         if (_currentSelection?.CroppedImageSource != null)
         {
-            System.Windows.Clipboard.SetImage(_currentSelection.CroppedImageSource);
+            Clipboard.SetImage(_currentSelection.CroppedImageSource);
             ShowToast("Image copied to clipboard!");
         }
     }
@@ -301,7 +313,7 @@ public partial class OverlayWindow : Window
     {
         if (_currentSelection?.CroppedImageSource != null)
         {
-            System.Windows.Clipboard.SetImage(_currentSelection.CroppedImageSource);
+            Clipboard.SetImage(_currentSelection.CroppedImageSource);
             ShowToast("Image copied to clipboard for sharing!");
         }
     }
@@ -344,7 +356,7 @@ public partial class OverlayWindow : Window
         timer.Start();
     }
 
-    private void OnWindowKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    private void OnWindowKeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape)
         {

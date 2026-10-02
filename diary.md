@@ -48,6 +48,14 @@ This file serves as a persistent memory and milestone tracker for the SelectAI p
    - Created `GoogleLensService.cs` performing background multipart upload of the cropped selection to Google Lens, extracting the 303 redirect target URL with Gemini AI results, and seamlessly loading it into the side panel.
    - Added browser switcher support (Chrome, Brave, Firefox, Edge, and "+ Add More" custom browser detection) and prominent "Show results in browser" button.
 
+10. **Interactive Bounding Box Drag Handles, Zero-Friction Re-Drawing & Clean Recognition**
+    - Added 4 interactive corner drag handles (TopLeft, TopRight, BottomLeft, BottomRight) allowing real-time bidirectional scaling and fine-tuning of the auto-snapped box.
+    - Floating action bar dynamically follows handle dragging in real-time.
+    - Zero-friction redrawing: clicking anywhere outside the corner handles immediately resets the box and begins a fresh drawing trace without modal resets.
+    - Switched freeform cropping from jagged transparent polygon cutouts to intact rectangular bounding box slices, ensuring complete visual and text context is preserved for Google Lens & Gemini AI recognition.
+    - Implemented clean window deactivation: pressing `Win + D`, `Alt + Tab`, or clicking the taskbar smoothly yields focus without locking the user's screen.
+    - Re-published application as a clean, single-file bundle containing only `SelectAI.exe` and `README.txt`.
+
 ---
 
 ## 🚀 Current Phase & Present Goals

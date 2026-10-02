@@ -1,11 +1,13 @@
 using System.Drawing;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using SelectAI.Core.Enums;
 using SelectAI.Core.Utils;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
+using Cursors = System.Windows.Input.Cursors;
 using Pen = System.Windows.Media.Pen;
 using Point = System.Windows.Point;
 
@@ -13,11 +15,26 @@ namespace SelectAI.UI.Overlay;
 
 public sealed class SelectionCanvas : FrameworkElement
 {
+    private enum DragHandle
+    {
+        None,
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
+    }
+
     private readonly List<PointF> _rawPoints = new();
     private List<PointF> _smoothedPoints = new();
     private SelectAI.Core.Enums.SelectionMode _currentMode = SelectAI.Core.Enums.SelectionMode.Freeform;
     private bool _isDrawing = false;
     private bool _selectionCompleted = false;
+
+    // Corner handle dragging state
+    private DragHandle _activeHandle = DragHandle.None;
+    private bool _isDraggingHandle = false;
+    private Point _dragStartPos;
+    private Rect _initialBox;
 
     // Rectangle mode tracking
     private Point _rectStart;
@@ -28,7 +45,7 @@ public sealed class SelectionCanvas : FrameworkElement
     private bool _animationRunning = false;
 
     // Drawing pens & brushes
-    private static readonly SolidColorBrush DimMaskBrush = new(Color.FromArgb(160, 0, 0, 0)); // Darker, more elegant overlay
+    private static readonly SolidColorBrush DimMaskBrush = new(Color.FromArgb(160, 0, 0, 0)); // Darker, elegant overlay
     private static readonly SolidColorBrush BloomBrush = new(Color.FromArgb(50, 0, 212, 255));   // Wide neon bloom
     private static readonly SolidColorBrush MidGlowBrush = new(Color.FromArgb(160, 0, 240, 255)); // Mid-range laser
     private static readonly SolidColorBrush CoreStrokeBrush = new(Color.FromArgb(255, 255, 255, 255)); // Pure luminous white core
@@ -69,7 +86,7 @@ public sealed class SelectionCanvas : FrameworkElement
         };
         CoreLaserPen.Freeze();
 
-        // Create a gradient border brush for the animated glow look
+        // Create gradient border brush for animated glow look
         var gradientBrush = new LinearGradientBrush(
             Color.FromArgb(255, 0, 212, 255), 
             Color.FromArgb(255, 120, 255, 180), 
@@ -80,6 +97,7 @@ public sealed class SelectionCanvas : FrameworkElement
     }
 
     public event EventHandler<List<PointF>>? SelectionCompleted;
+    public event EventHandler<Rect>? BoundingBoxChanged;
 
     public SelectAI.Core.Enums.SelectionMode Mode
     {
@@ -91,7 +109,7 @@ public sealed class SelectionCanvas : FrameworkElement
         }
     }
 
-    public bool IsSelecting => _isDrawing;
+    public bool IsSelecting => _isDrawing || _isDraggingHandle;
     public bool HasCompletedSelection => _selectionCompleted;
     public IReadOnlyList<PointF> CurrentPoints => _smoothedPoints;
     public Rect CurrentBoundingBox { get; private set; }
@@ -123,10 +141,9 @@ public sealed class SelectionCanvas : FrameworkElement
 
     private void OnRenderingFrame(object? sender, EventArgs e)
     {
-        // Animate trailing glow phase continuously while drawing or after selection
         _glowPhase = (_glowPhase + 0.03) % 1.0;
 
-        if (_isDrawing || _selectionCompleted)
+        if (_isDrawing || _selectionCompleted || _isDraggingHandle)
         {
             InvalidateVisual();
         }
@@ -137,13 +154,34 @@ public sealed class SelectionCanvas : FrameworkElement
         _rawPoints.Clear();
         _smoothedPoints.Clear();
         _isDrawing = false;
+        _isDraggingHandle = false;
+        _activeHandle = DragHandle.None;
         _selectionCompleted = false;
         CurrentBoundingBox = Rect.Empty;
+        Cursor = Cursors.Cross;
         InvalidateVisual();
     }
 
     public void HandleMouseDown(Point pos)
     {
+        // 1. If we already have a selection, check if the user clicked on a corner handle to resize it
+        if (_selectionCompleted && CurrentBoundingBox != Rect.Empty)
+        {
+            var hitHandle = HitTestHandle(pos, CurrentBoundingBox);
+            if (hitHandle != DragHandle.None)
+            {
+                _activeHandle = hitHandle;
+                _isDraggingHandle = true;
+                _dragStartPos = pos;
+                _initialBox = CurrentBoundingBox;
+                return;
+            }
+
+            // 2. If the user clicked outside or inside the handles, seamlessly start a fresh circle (redraw)!
+            ResetSelection();
+        }
+
+        // 3. Begin new drawing trace
         _isDrawing = true;
         _selectionCompleted = false;
         _rawPoints.Clear();
@@ -166,41 +204,87 @@ public sealed class SelectionCanvas : FrameworkElement
 
     public void HandleMouseMove(Point pos)
     {
-        if (!_isDrawing) return;
-
-        if (_currentMode == SelectionMode.Freeform)
+        // A. Resizing bounding box via corner handles
+        if (_isDraggingHandle)
         {
-            var currentP = new PointF((float)pos.X, (float)pos.Y);
+            UpdateHandleDrag(pos);
+            return;
+        }
 
-            // Filter points closer than 3 pixels to prevent clustering
-            if (_rawPoints.Count == 0 || GeometryHelper.Distance(_rawPoints[^1], currentP) >= 3.5f)
+        // B. Active drawing of circle or rectangle
+        if (_isDrawing)
+        {
+            if (_currentMode == SelectionMode.Freeform)
             {
-                _rawPoints.Add(currentP);
+                var currentP = new PointF((float)pos.X, (float)pos.Y);
 
-                // Real-time smoothing using corner-cutting
-                if (_rawPoints.Count >= 3)
+                if (_rawPoints.Count == 0 || GeometryHelper.Distance(_rawPoints[^1], currentP) >= 3.5f)
                 {
-                    _smoothedPoints = GeometryHelper.SmoothChaikin(_rawPoints, iterations: 2);
-                }
-                else
-                {
-                    _smoothedPoints = new List<PointF>(_rawPoints);
+                    _rawPoints.Add(currentP);
+
+                    if (_rawPoints.Count >= 3)
+                    {
+                        _smoothedPoints = GeometryHelper.SmoothChaikin(_rawPoints, iterations: 2);
+                    }
+                    else
+                    {
+                        _smoothedPoints = new List<PointF>(_rawPoints);
+                    }
                 }
             }
-        }
-        else
-        {
-            _rectCurrent = pos;
+            else
+            {
+                _rectCurrent = pos;
+            }
+
+            InvalidateVisual();
+            return;
         }
 
-        InvalidateVisual();
+        // C. Hover state when selection is completed: update cursor over corner handles
+        if (_selectionCompleted && CurrentBoundingBox != Rect.Empty)
+        {
+            var handle = HitTestHandle(pos, CurrentBoundingBox);
+            if (handle == DragHandle.TopLeft || handle == DragHandle.BottomRight)
+            {
+                Cursor = Cursors.SizeNWSE;
+            }
+            else if (handle == DragHandle.TopRight || handle == DragHandle.BottomLeft)
+            {
+                Cursor = Cursors.SizeNESW;
+            }
+            else
+            {
+                Cursor = Cursors.Cross;
+            }
+        }
     }
 
     public void HandleMouseUp(Point pos)
     {
+        // A. Finished dragging corner handle
+        if (_isDraggingHandle)
+        {
+            _isDraggingHandle = false;
+            _activeHandle = DragHandle.None;
+
+            _smoothedPoints = new List<PointF>
+            {
+                new((float)CurrentBoundingBox.Left, (float)CurrentBoundingBox.Top),
+                new((float)CurrentBoundingBox.Right, (float)CurrentBoundingBox.Top),
+                new((float)CurrentBoundingBox.Right, (float)CurrentBoundingBox.Bottom),
+                new((float)CurrentBoundingBox.Left, (float)CurrentBoundingBox.Bottom)
+            };
+
+            SelectionCompleted?.Invoke(this, _smoothedPoints);
+            InvalidateVisual();
+            return;
+        }
+
         if (!_isDrawing) return;
         _isDrawing = false;
 
+        // B. Finished drawing circle
         if (_currentMode == SelectionMode.Freeform)
         {
             if (_rawPoints.Count < 4)
@@ -210,7 +294,7 @@ public sealed class SelectionCanvas : FrameworkElement
             }
 
             var box = GeometryHelper.CalculateBoundingBox(_smoothedPoints);
-            if (box.Width < 10 || box.Height < 10)
+            if (box.Width < 12 || box.Height < 12)
             {
                 ResetSelection();
                 return;
@@ -228,7 +312,7 @@ public sealed class SelectionCanvas : FrameworkElement
             double w = Math.Abs(_rectStart.X - _rectCurrent.X);
             double h = Math.Abs(_rectStart.Y - _rectCurrent.Y);
 
-            if (w < 10 || h < 10)
+            if (w < 12 || h < 12)
             {
                 ResetSelection();
                 return;
@@ -248,6 +332,62 @@ public sealed class SelectionCanvas : FrameworkElement
         }
 
         InvalidateVisual();
+    }
+
+    private void UpdateHandleDrag(Point currentPos)
+    {
+        double left = _initialBox.Left;
+        double top = _initialBox.Top;
+        double right = _initialBox.Right;
+        double bottom = _initialBox.Bottom;
+
+        double dx = currentPos.X - _dragStartPos.X;
+        double dy = currentPos.Y - _dragStartPos.Y;
+
+        const double minSize = 24.0;
+
+        switch (_activeHandle)
+        {
+            case DragHandle.TopLeft:
+                left = Math.Min(right - minSize, _initialBox.Left + dx);
+                top = Math.Min(bottom - minSize, _initialBox.Top + dy);
+                break;
+            case DragHandle.TopRight:
+                right = Math.Max(left + minSize, _initialBox.Right + dx);
+                top = Math.Min(bottom - minSize, _initialBox.Top + dy);
+                break;
+            case DragHandle.BottomLeft:
+                left = Math.Min(right - minSize, _initialBox.Left + dx);
+                bottom = Math.Max(top + minSize, _initialBox.Bottom + dy);
+                break;
+            case DragHandle.BottomRight:
+                right = Math.Max(left + minSize, _initialBox.Right + dx);
+                bottom = Math.Max(top + minSize, _initialBox.Bottom + dy);
+                break;
+        }
+
+        CurrentBoundingBox = new Rect(left, top, Math.Max(minSize, right - left), Math.Max(minSize, bottom - top));
+        BoundingBoxChanged?.Invoke(this, CurrentBoundingBox);
+        InvalidateVisual();
+    }
+
+    private DragHandle HitTestHandle(Point pos, Rect r)
+    {
+        const double threshold = 18.0; // Comfort hit radius for easy mouse grab
+
+        if (GetDistance(pos, new Point(r.Left, r.Top)) <= threshold) return DragHandle.TopLeft;
+        if (GetDistance(pos, new Point(r.Right, r.Top)) <= threshold) return DragHandle.TopRight;
+        if (GetDistance(pos, new Point(r.Left, r.Bottom)) <= threshold) return DragHandle.BottomLeft;
+        if (GetDistance(pos, new Point(r.Right, r.Bottom)) <= threshold) return DragHandle.BottomRight;
+
+        return DragHandle.None;
+    }
+
+    private static double GetDistance(Point p1, Point p2)
+    {
+        double dx = p1.X - p2.X;
+        double dy = p1.Y - p2.Y;
+        return Math.Sqrt(dx * dx + dy * dy);
     }
 
     protected override void OnRender(DrawingContext dc)
@@ -290,7 +430,7 @@ public sealed class SelectionCanvas : FrameworkElement
             dc.DrawGeometry(DimMaskBrush, null, fullScreenGeom);
         }
 
-        // 3. Render Strokes and Glow Effects
+        // 3. Render Active Stroke while Circling
         if (_currentMode == SelectionMode.Freeform && _smoothedPoints.Count >= 2 && !_selectionCompleted)
         {
             var strokeGeom = CreatePathGeometry(_smoothedPoints, isClosed: false);
@@ -304,13 +444,12 @@ public sealed class SelectionCanvas : FrameworkElement
             // Layer 3: Razor-sharp white laser core
             dc.DrawGeometry(null, CoreLaserPen, strokeGeom);
 
-            // Layer 4: Animated Leading Particle Head (While user is drawing)
+            // Layer 4: Animated Leading Particle Head
             if (_isDrawing && _smoothedPoints.Count > 0)
             {
                 var head = _smoothedPoints[^1];
                 var headPoint = new Point(head.X, head.Y);
 
-                // Radiant halo
                 var radialBrush = new RadialGradientBrush
                 {
                     Center = headPoint,
@@ -336,13 +475,19 @@ public sealed class SelectionCanvas : FrameworkElement
                            Math.Max(1, Math.Abs(_rectStart.Y - _rectCurrent.Y)))
                 : CurrentBoundingBox;
 
-            // Outer soft glow
+            // Outer soft glow & border
             var rectGeom = new RectangleGeometry(rect, 16, 16);
             dc.DrawGeometry(null, OuterBloomPen, rectGeom);
             dc.DrawGeometry(null, RectBorderPen, rectGeom);
 
-            // Corner Accents (modern camera/viewfinder brackets)
+            // Corner Accents (viewfinder brackets)
             DrawCornerBrackets(dc, rectGeom.Rect);
+
+            // 4 Corner Drag Handles (Draggable/Resizable)
+            if (_selectionCompleted)
+            {
+                DrawCornerHandles(dc, rectGeom.Rect);
+            }
         }
     }
 
@@ -367,6 +512,28 @@ public sealed class SelectionCanvas : FrameworkElement
         // Bottom-right
         dc.DrawLine(bracketPen, new Point(r.Right + 1 - len, r.Bottom + 1), new Point(r.Right + 1, r.Bottom + 1));
         dc.DrawLine(bracketPen, new Point(r.Right + 1, r.Bottom + 1), new Point(r.Right + 1, r.Bottom + 1 - len));
+    }
+
+    private void DrawCornerHandles(DrawingContext dc, Rect r)
+    {
+        var handleBrush = Brushes.White;
+        var handleBorderPen = new Pen(new SolidColorBrush(Color.FromArgb(220, 0, 212, 255)), 2);
+        handleBorderPen.Freeze();
+
+        Point[] corners = {
+            new(r.Left, r.Top),
+            new(r.Right, r.Top),
+            new(r.Left, r.Bottom),
+            new(r.Right, r.Bottom)
+        };
+
+        foreach (var pt in corners)
+        {
+            // Outer glowing ring
+            dc.DrawEllipse(null, handleBorderPen, pt, 7.5, 7.5);
+            // Solid crisp core
+            dc.DrawEllipse(handleBrush, null, pt, 4.5, 4.5);
+        }
     }
 
     private static PathGeometry CreatePathGeometry(IReadOnlyList<PointF> points, bool isClosed)

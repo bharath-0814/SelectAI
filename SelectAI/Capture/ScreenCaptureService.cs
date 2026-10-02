@@ -243,6 +243,9 @@ public sealed class ScreenCaptureService : IScreenCapture
 
     public Bitmap CropFreeform(Bitmap source, IReadOnlyList<PointF> polygon, RectangleF boundingBox)
     {
-        return ImageHelper.CropPolygon(source, polygon, boundingBox);
+        // In Samsung Galaxy AI / Circle to Search, circling an area auto-snaps to the clean bounding rectangle.
+        // Cropping the intact rectangle ensures all visual context, borders, and text characters are preserved
+        // with 100% opacity so Google Lens and Gemini instantly recognize everything accurately.
+        return CropRegion(source, boundingBox);
     }
 }
