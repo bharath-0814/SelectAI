@@ -43,16 +43,16 @@ public partial class SideSearchPanel : UserControl
             var env = await CoreWebView2Environment.CreateAsync(null, tempUserData, options);
             await WebViewControl.EnsureCoreWebView2Async(env);
 
-            // Responsive User-Agent prevents horizontal scrollbars and forces clean single-column visual search
+            // Desktop Chrome User-Agent ensures full Google Search & Gemini script compatibility
             WebViewControl.CoreWebView2.Settings.UserAgent = 
-                "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.102 Mobile Safari/537.36";
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 
             WebViewControl.NavigationStarting += (_, _) =>
             {
                 LoadingOverlay.Visibility = Visibility.Visible;
             };
 
-            WebViewControl.NavigationCompleted += (_, args) =>
+            WebViewControl.NavigationCompleted += async (_, args) =>
             {
                 LoadingOverlay.Visibility = Visibility.Collapsed;
                 if (args.IsSuccess && WebViewControl.Source != null)
@@ -63,6 +63,13 @@ public partial class SideSearchPanel : UserControl
                     {
                         TxtSearchQuery.Text = q;
                     }
+
+                    try
+                    {
+                        await WebViewControl.CoreWebView2.ExecuteScriptAsync(
+                            "if (document.body) { document.body.style.overflowX = 'hidden'; }");
+                    }
+                    catch { }
                 }
             };
 
@@ -113,6 +120,11 @@ public partial class SideSearchPanel : UserControl
     public void SetThumbnail(ImageSource? imageSource)
     {
         ImgSelectionThumbnail.Source = imageSource;
+    }
+
+    public void SetQueryText(string text)
+    {
+        TxtSearchQuery.Text = text;
     }
 
     public string CurrentUrl => _currentUrl;

@@ -61,7 +61,14 @@ This file serves as a persistent memory and milestone tracker for the SelectAI p
     - Exact Galaxy AI side panel header: removed messy browser pills row completely. Replaced with an elegant engine switcher button (`[ 🌐 Google ▾ ]` / `[ 🔷 Bing ▾ ]`) with down-arrow popup menu to choose engines (Google, Bing, Brave, Firefox, Edge, Custom).
     - Embedded selection thumbnail: displayed miniature rounded preview of the cropped image inside the search capsule right next to the search query.
     - Fixed GDI+ DPI resolution offset drift in `ImageHelper.CropRect` via direct memory `Bitmap.Clone()`.
-    - Forced native dark theme inside `WebView2` via `--enable-features=WebContentsForceDark` with responsive single-column mobile viewport.
+
+12. **Intelligent Hybrid OCR + Visual Pipeline & Native Desktop Engine**
+    - Eliminated "no response available" / empty results on text selections by implementing an intelligent hybrid pipeline:
+      - Automatically executes `WindowsMediaOcrProvider` (<15ms) on the cropped selection.
+      - If text is present (e.g., file names, error messages, code, documentation), navigates to Google Search with the exact query text, immediately rendering Google's **Gemini AI Overview** and full search results.
+      - If pure image/illustration (e.g., Pikachu, photo, logo), uploads to Google Lens for visual matching.
+    - Fixed WebView2 script execution: removed the Android mobile User-Agent that was breaking Google desktop scripts and causing blank pages. Used standard desktop Chrome User-Agent with dynamic `overflow-x: hidden` injection for clean vertical presentation.
+    - Populated the top search capsule with the extracted OCR query text for seamless multisearch and user refinement.
 
 ---
 

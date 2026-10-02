@@ -77,19 +77,39 @@ public partial class OverlayWindow : Window
     {
         if (_currentSelection?.CroppedBitmap == null) return;
 
-        var bytes = ImageHelper.ToPngBytes(_currentSelection.CroppedBitmap);
+        var cropped = _currentSelection.CroppedBitmap;
+        var bytes = ImageHelper.ToPngBytes(cropped);
+
         _ = Task.Run(async () =>
         {
-            string url;
-            if (engine == "bing")
+            var ocrResult = await _ocrProvider.RecognizeTextAsync(cropped);
+            string rawText = ocrResult.FullText?.Trim() ?? "";
+            string cleanQuery = string.Join(" ", rawText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+
+            string targetUrl;
+            if (cleanQuery.Length > 2)
             {
-                url = "https://www.bing.com/visualsearch";
+                if (cleanQuery.Length > 120) cleanQuery = cleanQuery[..120].Trim();
+
+                targetUrl = engine == "bing"
+                    ? $"https://www.bing.com/search?q={Uri.EscapeDataString(cleanQuery)}"
+                    : $"https://www.google.com/search?q={Uri.EscapeDataString(cleanQuery)}";
             }
             else
             {
-                url = await GoogleLensService.UploadImageAsync(bytes);
+                targetUrl = engine == "bing"
+                    ? "https://www.bing.com/visualsearch"
+                    : await GoogleLensService.UploadImageAsync(bytes);
             }
-            await Dispatcher.InvokeAsync(() => SearchSidePanel.NavigateToUrlAsync(url));
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (cleanQuery.Length > 2)
+                {
+                    SearchSidePanel.SetQueryText(cleanQuery);
+                }
+                _ = SearchSidePanel.NavigateToUrlAsync(targetUrl);
+            });
         });
     }
 
@@ -243,12 +263,38 @@ public partial class OverlayWindow : Window
         // Animate desktop shift left and open side panel (Samsung Galaxy AI split-screen)
         OpenSidePanel();
 
-        // Upload to Google Lens and navigate WebView in side panel
+        // Intelligent Hybrid Search: OCR Text (with Gemini Overview) or Visual Lens
         var bytes = ImageHelper.ToPngBytes(cropped);
         _ = Task.Run(async () =>
         {
-            var lensUrl = await GoogleLensService.UploadImageAsync(bytes);
-            await Dispatcher.InvokeAsync(() => SearchSidePanel.NavigateToUrlAsync(lensUrl));
+            var ocrResult = await _ocrProvider.RecognizeTextAsync(cropped);
+            string rawText = ocrResult.FullText?.Trim() ?? "";
+            string cleanQuery = string.Join(" ", rawText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+
+            string targetUrl;
+            if (cleanQuery.Length > 2)
+            {
+                if (cleanQuery.Length > 120) cleanQuery = cleanQuery[..120].Trim();
+
+                targetUrl = SearchSidePanel.SelectedEngine == "bing"
+                    ? $"https://www.bing.com/search?q={Uri.EscapeDataString(cleanQuery)}"
+                    : $"https://www.google.com/search?q={Uri.EscapeDataString(cleanQuery)}";
+            }
+            else
+            {
+                targetUrl = SearchSidePanel.SelectedEngine == "bing"
+                    ? "https://www.bing.com/visualsearch"
+                    : await GoogleLensService.UploadImageAsync(bytes);
+            }
+
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (cleanQuery.Length > 2)
+                {
+                    SearchSidePanel.SetQueryText(cleanQuery);
+                }
+                _ = SearchSidePanel.NavigateToUrlAsync(targetUrl);
+            });
         });
     }
 
