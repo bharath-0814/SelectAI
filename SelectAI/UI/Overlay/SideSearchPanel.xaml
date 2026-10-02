@@ -3,44 +3,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf">
     <UserControl.Resources>
-        <Style x:Key="BrowserTabButton" TargetType="RadioButton">
-            <Setter Property="Background" Value="#1E222D" />
-            <Setter Property="Foreground" Value="#94A3B8" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="FontWeight" Value="Medium" />
-            <Setter Property="Height" Value="26" />
-            <Setter Property="Padding" Value="10,2" />
-            <Setter Property="Margin" Value="2,0" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="tabBorder"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="#2D3342"
-                                BorderThickness="1"
-                                CornerRadius="13"
-                                Padding="{TemplateBinding Padding}"
-                                SnapsToDevicePixels="True">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="tabBorder" Property="Background" Value="#2A303F" />
-                                <Setter Property="Foreground" Value="#F8FAFC" />
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="tabBorder" Property="Background" Value="#0284C7" />
-                                <Setter TargetName="tabBorder" Property="BorderBrush" Value="#38BDF8" />
-                                <Setter Property="Foreground" Value="#FFFFFF" />
-                                <Setter Property="FontWeight" Value="SemiBold" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <Style x:Key="HeaderIconButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="#94A3B8" />
@@ -64,10 +26,18 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Dropdown menu style for dark theme -->
+        <Style x:Key="EngineContextMenu" TargetType="ContextMenu">
+            <Setter Property="Background" Value="#1A1C24" />
+            <Setter Property="BorderBrush" Value="#2E3444" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="#F8FAFC" />
+        </Style>
     </UserControl.Resources>
 
-    <!-- Side Panel Dock Container -->
-    <Border Background="#13151D"
+    <!-- Side Panel Dock Container matching Galaxy AI Select exactly -->
+    <Border Background="#12141A"
             BorderBrush="#252A38"
             BorderThickness="1,0,0,0"
             Width="440"
@@ -75,52 +45,118 @@
             Effect="{StaticResource ElevationShadow}">
         <Grid>
             <Grid.RowDefinitions>
-                <!-- Row 0: Header & Search Bar -->
+                <!-- Row 0: Exact Galaxy AI Top Header -->
                 <RowDefinition Height="Auto" />
-                <!-- Row 1: Browser Selection Pills -->
-                <RowDefinition Height="Auto" />
-                <!-- Row 2: WebView / Results Container -->
+                <!-- Row 1: WebView2 Results Container in Dark Theme -->
                 <RowDefinition Height="*" />
-                <!-- Row 3: Footer Action Bar -->
+                <!-- Row 2: Footer Action Button -->
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Row 0: Top Header with Search Bar -->
-            <Border Grid.Row="0" Background="#181B24" BorderBrush="#262B3B" BorderThickness="0,0,0,1" Padding="12,10">
+            <!-- Row 0: Top Header matching Image 2 -->
+            <Border Grid.Row="0" Background="#161820" BorderBrush="#222634" BorderThickness="0,0,0,1" Padding="10,8">
                 <Grid>
                     <Grid.ColumnDefinitions>
+                        <!-- Back button -->
                         <ColumnDefinition Width="Auto" />
+                        <!-- Browser switcher icon + arrow -->
+                        <ColumnDefinition Width="Auto" />
+                        <!-- Search capsule with thumbnail -->
                         <ColumnDefinition Width="*" />
+                        <!-- Close button -->
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- Back Button -->
+                    <!-- Back Button ‹ -->
                     <Button x:Name="BtnBack"
                             Grid.Column="0"
                             Style="{StaticResource HeaderIconButton}"
-                            Margin="0,0,6,0"
+                            Margin="0,0,4,0"
                             Click="OnBackClick"
                             ToolTip="Go back">
-                        <TextBlock Text="‹" FontSize="22" FontWeight="Bold" Margin="0,-2,0,0" />
+                        <TextBlock Text="‹" FontSize="22" FontWeight="Bold" Margin="0,-2,0,0" Foreground="#CBD5E1" />
                     </Button>
 
-                    <!-- Search Input Capsule -->
-                    <Border Grid.Column="1"
+                    <!-- Browser Switcher Icon Button (with Down Arrow ▾) -->
+                    <Button x:Name="BtnBrowserSelector"
+                            Grid.Column="1"
                             Background="#222634"
                             BorderBrush="#31374A"
                             BorderThickness="1"
-                            CornerRadius="18"
-                            Height="36"
-                            Padding="10,0">
+                            Height="34"
+                            Padding="8,0"
+                            Margin="0,0,6,0"
+                            Cursor="Hand"
+                            Click="OnBrowserSelectorClick"
+                            ToolTip="Switch browser engine">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bb"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="17"
+                                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bb" Property="Background" Value="#2A3042" />
+                                        <Setter TargetName="bb" Property="BorderBrush" Value="#0284C7" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- Active Engine Icon -->
+                            <TextBlock x:Name="TxtEngineIcon" Text="🌐" FontSize="14" VerticalAlignment="Center" Margin="0,0,4,0" />
+                            <TextBlock x:Name="TxtEngineName" Text="Google" FontSize="11" FontWeight="SemiBold" Foreground="#F8FAFC" VerticalAlignment="Center" Margin="0,0,4,0" />
+                            <!-- Down Arrow ▾ -->
+                            <TextBlock Text="▾" FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <!-- Context Menu for Browser Selection -->
+                        <Button.ContextMenu>
+                            <ContextMenu x:Name="BrowserContextMenu" Style="{StaticResource EngineContextMenu}">
+                                <MenuItem Header="🌐 Google Lens (Chrome)" Click="OnSelectGoogle" Foreground="#F8FAFC" />
+                                <MenuItem Header="🔷 Bing Visual Search" Click="OnSelectBing" Foreground="#F8FAFC" />
+                                <MenuItem Header="🦁 Brave Browser" Click="OnSelectBrave" Foreground="#F8FAFC" />
+                                <MenuItem Header="🦊 Mozilla Firefox" Click="OnSelectFirefox" Foreground="#F8FAFC" />
+                                <MenuItem Header="🌊 Microsoft Edge" Click="OnSelectEdge" Foreground="#F8FAFC" />
+                                <Separator Background="#2E3444" />
+                                <MenuItem Header="➕ Add Custom Browser..." Click="OnAddCustomBrowser" Foreground="#38BDF8" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+
+                    <!-- Search Capsule containing Thumbnail + Query + Search Icon -->
+                    <Border Grid.Column="2"
+                            Background="#222634"
+                            BorderBrush="#31374A"
+                            BorderThickness="1"
+                            CornerRadius="17"
+                            Height="34"
+                            Padding="4,0,8,0">
                         <Grid VerticalAlignment="Center">
                             <Grid.ColumnDefinitions>
+                                <!-- Cropped Thumbnail Preview -->
                                 <ColumnDefinition Width="Auto" />
+                                <!-- Query Text Box -->
                                 <ColumnDefinition Width="*" />
+                                <!-- Search Icon -->
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
-                            <!-- AI Sparkle / Lens Icon -->
-                            <TextBlock Grid.Column="0" Text="✨" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <!-- Miniature Cropped Selection Thumbnail -->
+                            <Border Grid.Column="0"
+                                    Width="26" Height="26"
+                                    CornerRadius="6"
+                                    ClipToBounds="True"
+                                    Background="#0F172A"
+                                    BorderBrush="#38BDF8"
+                                    BorderThickness="1"
+                                    Margin="0,0,6,0">
+                                <Image x:Name="ImgSelectionThumbnail" Stretch="UniformToFill" />
+                            </Border>
 
                             <!-- Search Input Box -->
                             <TextBox x:Name="TxtSearchQuery"
@@ -132,7 +168,7 @@
                                      VerticalAlignment="Center"
                                      KeyDown="OnSearchBoxKeyDown" />
 
-                            <!-- Search Icon Button -->
+                            <!-- Search Magnifying Glass Button -->
                             <Button x:Name="BtnSearchQuery"
                                     Grid.Column="2"
                                     Background="Transparent"
@@ -140,64 +176,25 @@
                                     Cursor="Hand"
                                     Click="OnSearchQueryClick"
                                     Margin="4,0,0,0">
-                                <TextBlock Text="🔍" FontSize="12" />
+                                <TextBlock Text="🔍" FontSize="12" Foreground="#94A3B8" />
                             </Button>
                         </Grid>
                     </Border>
 
-                    <!-- Close Button -->
+                    <!-- Close Button ✕ -->
                     <Button x:Name="BtnClosePanel"
-                            Grid.Column="2"
+                            Grid.Column="3"
                             Style="{StaticResource HeaderIconButton}"
-                            Margin="6,0,0,0"
+                            Margin="4,0,0,0"
                             Click="OnCloseClick"
                             ToolTip="Close panel (Esc)">
-                        <TextBlock Text="✕" FontSize="13" FontWeight="Bold" />
+                        <TextBlock Text="✕" FontSize="13" FontWeight="Bold" Foreground="#94A3B8" />
                     </Button>
                 </Grid>
             </Border>
 
-            <!-- Row 1: Browser Selection Pills -->
-            <Border Grid.Row="1" Background="#161822" BorderBrush="#222634" BorderThickness="0,0,0,1" Padding="12,6">
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                    <StackPanel x:Name="BrowserPillsContainer" Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="Browser:" Foreground="#64748B" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0" />
-                        <RadioButton x:Name="RbChrome" Content="Chrome" Style="{StaticResource BrowserTabButton}" IsChecked="True" Checked="OnBrowserChanged" />
-                        <RadioButton x:Name="RbBrave" Content="Brave" Style="{StaticResource BrowserTabButton}" Checked="OnBrowserChanged" />
-                        <RadioButton x:Name="RbFirefox" Content="Firefox" Style="{StaticResource BrowserTabButton}" Checked="OnBrowserChanged" />
-                        <RadioButton x:Name="RbEdge" Content="Edge" Style="{StaticResource BrowserTabButton}" Checked="OnBrowserChanged" />
-                        
-                        <!-- Add Custom Browser Button -->
-                        <Button x:Name="BtnAddBrowser"
-                                Content="+ Add More"
-                                Background="Transparent"
-                                Foreground="#38BDF8"
-                                BorderBrush="#0284C7"
-                                BorderThickness="1"
-                                Height="26"
-                                Padding="8,2"
-                                Margin="4,0,0,0"
-                                Cursor="Hand"
-                                FontSize="11"
-                                Click="OnAddBrowserClick">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border Background="{TemplateBinding Background}"
-                                            BorderBrush="{TemplateBinding BorderBrush}"
-                                            BorderThickness="{TemplateBinding BorderThickness}"
-                                            CornerRadius="13"
-                                            Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
-                    </StackPanel>
-                </ScrollViewer>
-            </Border>
-
-            <!-- Row 2: WebView & Loading State -->
-            <Grid Grid.Row="2">
+            <!-- Row 1: Embedded Results with Force Dark Mode -->
+            <Grid Grid.Row="1">
                 <!-- WebView2 Browser Control -->
                 <wv2:WebView2 x:Name="WebViewControl"
                               HorizontalAlignment="Stretch"
@@ -205,14 +202,14 @@
 
                 <!-- Sleek Galaxy AI Loading Overlay -->
                 <Border x:Name="LoadingOverlay"
-                        Background="#E613151D"
+                        Background="#E612141A"
                         HorizontalAlignment="Stretch"
                         VerticalAlignment="Stretch"
                         Visibility="Visible">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
                         <!-- Glowing AI Ring -->
-                        <Border Width="64" Height="64"
-                                CornerRadius="32"
+                        <Border Width="60" Height="60"
+                                CornerRadius="30"
                                 BorderThickness="3"
                                 Margin="0,0,0,16"
                                 HorizontalAlignment="Center">
@@ -223,10 +220,10 @@
                                     <GradientStop Color="#10B981" Offset="1.0" />
                                 </LinearGradientBrush>
                             </Border.BorderBrush>
-                            <TextBlock Text="✨" FontSize="26" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <TextBlock Text="✨" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
 
-                        <TextBlock Text="Analyzing with Gemini AI..."
+                        <TextBlock Text="Analyzing selection..."
                                    Foreground="#F8FAFC"
                                    FontSize="15"
                                    FontWeight="SemiBold"
@@ -241,25 +238,25 @@
                 </Border>
             </Grid>
 
-            <!-- Row 3: Footer Prominent Blue Pill Button -->
-            <Border Grid.Row="3" Background="#181B24" BorderBrush="#252A38" BorderThickness="0,1,0,0" Padding="16,12">
+            <!-- Row 2: Prominent Blue Pill Button matching Image 2 exactly -->
+            <Border Grid.Row="2" Background="#161820" BorderBrush="#222634" BorderThickness="0,1,0,0" Padding="16,12">
                 <Button x:Name="BtnShowInBrowser"
-                        Height="44"
+                        Height="42"
                         Cursor="Hand"
                         Click="OnShowInBrowserClick"
-                        ToolTip="Open full results in selected browser">
+                        ToolTip="Open full results in external browser">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border x:Name="btnBorder"
                                     Background="#2563EB"
-                                    CornerRadius="22"
+                                    CornerRadius="21"
                                     Effect="{StaticResource GlowShadow}"
                                     SnapsToDevicePixels="True">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="🌐" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="🌐" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center" />
                                     <TextBlock Text="Show results in browser"
                                                Foreground="#FFFFFF"
-                                               FontSize="14"
+                                               FontSize="13.5"
                                                FontWeight="SemiBold"
                                                VerticalAlignment="Center" />
                                 </StackPanel>

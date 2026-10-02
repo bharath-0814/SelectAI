@@ -2,6 +2,8 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using SelectAI.Core.Utils;
 
@@ -11,9 +13,11 @@ public partial class SideSearchPanel : UserControl
 {
     public event EventHandler? CloseRequested;
     public event EventHandler<string>? ShowInBrowserRequested;
+    public event EventHandler<string>? EngineChanged;
 
     private string _currentUrl = "https://lens.google.com/";
     private string _selectedBrowserId = "chrome";
+    private string _selectedEngine = "google";
     private bool _isWebViewInitialized = false;
 
     public SideSearchPanel()
@@ -34,8 +38,14 @@ public partial class SideSearchPanel : UserControl
         try
         {
             var tempUserData = Path.Combine(Path.GetTempPath(), "SelectAI_WebViewProfile");
-            var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(userDataFolder: tempUserData);
+            // Force Dark Theme in WebView2 matching Galaxy AI dark mode
+            var options = new CoreWebView2EnvironmentOptions("--enable-features=WebContentsForceDark --force-dark-mode");
+            var env = await CoreWebView2Environment.CreateAsync(null, tempUserData, options);
             await WebViewControl.EnsureCoreWebView2Async(env);
+
+            // Responsive User-Agent prevents horizontal scrollbars and forces clean single-column visual search
+            WebViewControl.CoreWebView2.Settings.UserAgent = 
+                "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.102 Mobile Safari/537.36";
 
             WebViewControl.NavigationStarting += (_, _) =>
             {
@@ -48,7 +58,11 @@ public partial class SideSearchPanel : UserControl
                 if (args.IsSuccess && WebViewControl.Source != null)
                 {
                     _currentUrl = WebViewControl.Source.ToString();
-                    TxtSearchQuery.Text = GetDisplayQuery(_currentUrl);
+                    var q = GetDisplayQuery(_currentUrl);
+                    if (!string.IsNullOrEmpty(q))
+                    {
+                        TxtSearchQuery.Text = q;
+                    }
                 }
             };
 
@@ -69,7 +83,12 @@ public partial class SideSearchPanel : UserControl
     public async Task NavigateToUrlAsync(string url)
     {
         _currentUrl = url;
-        TxtSearchQuery.Text = GetDisplayQuery(url);
+        var q = GetDisplayQuery(url);
+        if (!string.IsNullOrEmpty(q))
+        {
+            TxtSearchQuery.Text = q;
+        }
+
         LoadingOverlay.Visibility = Visibility.Visible;
 
         await InitializeWebViewAsync();
@@ -91,9 +110,14 @@ public partial class SideSearchPanel : UserControl
         }
     }
 
-    public string CurrentUrl => _currentUrl;
+    public void SetThumbnail(ImageSource? imageSource)
+    {
+        ImgSelectionThumbnail.Source = imageSource;
+    }
 
+    public string CurrentUrl => _currentUrl;
     public string SelectedBrowserId => _selectedBrowserId;
+    public string SelectedEngine => _selectedEngine;
 
     private string GetDisplayQuery(string url)
     {
@@ -101,22 +125,61 @@ public partial class SideSearchPanel : UserControl
         {
             var uri = new Uri(url);
             var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-            var q = query["q"];
+            var q = query["q"] ?? query["text"] ?? query["p"];
             if (!string.IsNullOrEmpty(q)) return q;
         }
         catch { }
         return "";
     }
 
-    private void OnBrowserChanged(object sender, RoutedEventArgs e)
+    private void OnBrowserSelectorClick(object sender, RoutedEventArgs e)
     {
-        if (RbChrome.IsChecked == true) _selectedBrowserId = "chrome";
-        else if (RbBrave.IsChecked == true) _selectedBrowserId = "brave";
-        else if (RbFirefox.IsChecked == true) _selectedBrowserId = "firefox";
-        else if (RbEdge.IsChecked == true) _selectedBrowserId = "edge";
+        // Open the dropdown menu directly beneath the button
+        BrowserContextMenu.PlacementTarget = BtnBrowserSelector;
+        BrowserContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        BrowserContextMenu.IsOpen = true;
     }
 
-    private void OnAddBrowserClick(object sender, RoutedEventArgs e)
+    private void OnSelectGoogle(object sender, RoutedEventArgs e)
+    {
+        _selectedEngine = "google";
+        _selectedBrowserId = "chrome";
+        TxtEngineIcon.Text = "🌐";
+        TxtEngineName.Text = "Google";
+        EngineChanged?.Invoke(this, "google");
+    }
+
+    private void OnSelectBing(object sender, RoutedEventArgs e)
+    {
+        _selectedEngine = "bing";
+        _selectedBrowserId = "edge";
+        TxtEngineIcon.Text = "🔷";
+        TxtEngineName.Text = "Bing";
+        EngineChanged?.Invoke(this, "bing");
+    }
+
+    private void OnSelectBrave(object sender, RoutedEventArgs e)
+    {
+        _selectedBrowserId = "brave";
+        TxtEngineIcon.Text = "🦁";
+        TxtEngineName.Text = "Brave";
+    }
+
+    private void OnSelectFirefox(object sender, RoutedEventArgs e)
+    {
+        _selectedBrowserId = "firefox";
+        TxtEngineIcon.Text = "🦊";
+        TxtEngineName.Text = "Firefox";
+    }
+
+    private void OnSelectEdge(object sender, RoutedEventArgs e)
+    {
+        _selectedBrowserId = "edge";
+        TxtEngineIcon.Text = "🌊";
+        TxtEngineName.Text = "Edge";
+    }
+
+    private void OnAddCustomBrowser(object sender, RoutedEventArgs e)
     {
         var dlg = new OpenFileDialog
         {
@@ -131,19 +194,9 @@ public partial class SideSearchPanel : UserControl
             var id = "custom_" + Guid.NewGuid().ToString("N")[..4];
 
             BrowserHelper.AddCustomBrowser(name, path);
-
-            var rb = new RadioButton
-            {
-                Content = name,
-                Style = (Style)FindResource("BrowserTabButton"),
-                IsChecked = true
-            };
-            rb.Checked += (s, ev) => _selectedBrowserId = id;
             _selectedBrowserId = id;
-
-            // Insert before the "+ Add More" button
-            int count = BrowserPillsContainer.Children.Count;
-            BrowserPillsContainer.Children.Insert(Math.Max(1, count - 1), rb);
+            TxtEngineIcon.Text = "🚀";
+            TxtEngineName.Text = name;
         }
     }
 
@@ -184,7 +237,10 @@ public partial class SideSearchPanel : UserControl
         var text = TxtSearchQuery.Text?.Trim();
         if (string.IsNullOrEmpty(text)) return;
 
-        var searchUrl = $"https://www.google.com/search?q={Uri.EscapeDataString(text)}";
+        string searchUrl = _selectedEngine == "bing"
+            ? $"https://www.bing.com/search?q={Uri.EscapeDataString(text)}"
+            : $"https://www.google.com/search?q={Uri.EscapeDataString(text)}";
+
         _ = NavigateToUrlAsync(searchUrl);
     }
 }

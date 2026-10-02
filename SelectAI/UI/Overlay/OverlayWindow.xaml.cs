@@ -63,6 +63,7 @@ public partial class OverlayWindow : Window
         // Wire side search panel events
         SearchSidePanel.CloseRequested += (_, _) => CloseOverlay();
         SearchSidePanel.ShowInBrowserRequested += OnShowInBrowser;
+        SearchSidePanel.EngineChanged += OnEngineChanged;
 
         // Wire selection canvas
         OverlayCanvas.SelectionCompleted += OnSelectionFinished;
@@ -70,6 +71,26 @@ public partial class OverlayWindow : Window
 
         // Wire window deactivation for fluid app switching and Win+D
         Deactivated += OnWindowDeactivated;
+    }
+
+    private void OnEngineChanged(object? sender, string engine)
+    {
+        if (_currentSelection?.CroppedBitmap == null) return;
+
+        var bytes = ImageHelper.ToPngBytes(_currentSelection.CroppedBitmap);
+        _ = Task.Run(async () =>
+        {
+            string url;
+            if (engine == "bing")
+            {
+                url = "https://www.bing.com/visualsearch";
+            }
+            else
+            {
+                url = await GoogleLensService.UploadImageAsync(bytes);
+            }
+            await Dispatcher.InvokeAsync(() => SearchSidePanel.NavigateToUrlAsync(url));
+        });
     }
 
     private void OnWindowDeactivated(object? sender, EventArgs e)
@@ -215,6 +236,9 @@ public partial class OverlayWindow : Window
         // Position pill toolbar right below the selection box
         PositionToolbar(box);
         Toolbar.Visibility = Visibility.Visible;
+
+        // Display thumbnail in side panel search capsule matching Image 2
+        SearchSidePanel.SetThumbnail(_currentSelection?.CroppedImageSource);
 
         // Animate desktop shift left and open side panel (Samsung Galaxy AI split-screen)
         OpenSidePanel();

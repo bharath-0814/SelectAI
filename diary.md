@@ -56,6 +56,13 @@ This file serves as a persistent memory and milestone tracker for the SelectAI p
     - Implemented clean window deactivation: pressing `Win + D`, `Alt + Tab`, or clicking the taskbar smoothly yields focus without locking the user's screen.
     - Re-published application as a clean, single-file bundle containing only `SelectAI.exe` and `README.txt`.
 
+11. **Whole-Box Draggable Panning, Exact Galaxy AI Header with Engine Dropdown & Dark Mode**
+    - Whole-box movement: hovering inside the selected area changes the cursor to `SizeAll`, allowing the user to drag and move the entire selection rectangle to any position on the screen.
+    - Exact Galaxy AI side panel header: removed messy browser pills row completely. Replaced with an elegant engine switcher button (`[ 🌐 Google ▾ ]` / `[ 🔷 Bing ▾ ]`) with down-arrow popup menu to choose engines (Google, Bing, Brave, Firefox, Edge, Custom).
+    - Embedded selection thumbnail: displayed miniature rounded preview of the cropped image inside the search capsule right next to the search query.
+    - Fixed GDI+ DPI resolution offset drift in `ImageHelper.CropRect` via direct memory `Bitmap.Clone()`.
+    - Forced native dark theme inside `WebView2` via `--enable-features=WebContentsForceDark` with responsive single-column mobile viewport.
+
 ---
 
 ## 🚀 Current Phase & Present Goals

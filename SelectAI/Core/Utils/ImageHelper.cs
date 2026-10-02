@@ -45,16 +45,23 @@ public static class ImageHelper
         int h = Math.Max(1, Math.Min(region.Height, source.Height - y));
 
         var cropRect = new Rectangle(x, y, w, h);
-        var cropped = new Bitmap(w, h, PixelFormat.Format32bppArgb);
-
-        using (var g = Graphics.FromImage(cropped))
+        try
         {
-            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-            g.DrawImage(source, new Rectangle(0, 0, w, h), cropRect, GraphicsUnit.Pixel);
+            // Direct memory clone prevents GDI+ DPI resolution scaling offset drift
+            return source.Clone(cropRect, source.PixelFormat);
         }
-
-        return cropped;
+        catch
+        {
+            var cropped = new Bitmap(w, h, PixelFormat.Format32bppArgb);
+            cropped.SetResolution(source.HorizontalResolution, source.VerticalResolution);
+            using (var g = Graphics.FromImage(cropped))
+            {
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.DrawImage(source, new Rectangle(0, 0, w, h), cropRect, GraphicsUnit.Pixel);
+            }
+            return cropped;
+        }
     }
 
     public static Bitmap CropPolygon(Bitmap source, IReadOnlyList<PointF> polygon, RectangleF boundingBox)

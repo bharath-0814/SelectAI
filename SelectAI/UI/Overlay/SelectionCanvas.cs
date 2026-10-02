@@ -30,9 +30,13 @@ public sealed class SelectionCanvas : FrameworkElement
     private bool _isDrawing = false;
     private bool _selectionCompleted = false;
 
-    // Corner handle dragging state
+    // Corner handle dragging (resizing)
     private DragHandle _activeHandle = DragHandle.None;
     private bool _isDraggingHandle = false;
+
+    // Box panning (moving the entire rectangle across the screen)
+    private bool _isDraggingBox = false;
+
     private Point _dragStartPos;
     private Rect _initialBox;
 
@@ -46,7 +50,7 @@ public sealed class SelectionCanvas : FrameworkElement
 
     // Drawing pens & brushes
     private static readonly SolidColorBrush DimMaskBrush = new(Color.FromArgb(160, 0, 0, 0)); // Darker, elegant overlay
-    private static readonly SolidColorBrush BloomBrush = new(Color.FromArgb(50, 0, 212, 255));   // Wide neon bloom
+    private static readonly SolidColorBrush BloomBrush = new(Color.FromArgb(60, 0, 212, 255));   // Wide neon bloom
     private static readonly SolidColorBrush MidGlowBrush = new(Color.FromArgb(160, 0, 240, 255)); // Mid-range laser
     private static readonly SolidColorBrush CoreStrokeBrush = new(Color.FromArgb(255, 255, 255, 255)); // Pure luminous white core
 
@@ -62,7 +66,7 @@ public sealed class SelectionCanvas : FrameworkElement
         MidGlowBrush.Freeze();
         CoreStrokeBrush.Freeze();
 
-        OuterBloomPen = new Pen(BloomBrush, 12)
+        OuterBloomPen = new Pen(BloomBrush, 14)
         {
             StartLineCap = PenLineCap.Round,
             EndLineCap = PenLineCap.Round,
@@ -86,13 +90,19 @@ public sealed class SelectionCanvas : FrameworkElement
         };
         CoreLaserPen.Freeze();
 
-        // Create gradient border brush for animated glow look
-        var gradientBrush = new LinearGradientBrush(
-            Color.FromArgb(255, 0, 212, 255), 
-            Color.FromArgb(255, 120, 255, 180), 
-            new Point(0, 0), new Point(1, 1));
-        gradientBrush.Freeze();
-        RectBorderPen = new Pen(gradientBrush, 3.5);
+        // Exact Galaxy AI Aurora Gradient (Cyan -> Mint Green -> Pink -> Violet)
+        var auroraGradient = new LinearGradientBrush
+        {
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(1, 1)
+        };
+        auroraGradient.GradientStops.Add(new GradientStop(Color.FromArgb(255, 0, 240, 255), 0.0));
+        auroraGradient.GradientStops.Add(new GradientStop(Color.FromArgb(255, 52, 211, 153), 0.35));
+        auroraGradient.GradientStops.Add(new GradientStop(Color.FromArgb(255, 236, 72, 153), 0.70));
+        auroraGradient.GradientStops.Add(new GradientStop(Color.FromArgb(255, 139, 92, 246), 1.0));
+        auroraGradient.Freeze();
+
+        RectBorderPen = new Pen(auroraGradient, 4.0);
         RectBorderPen.Freeze();
     }
 
@@ -109,7 +119,7 @@ public sealed class SelectionCanvas : FrameworkElement
         }
     }
 
-    public bool IsSelecting => _isDrawing || _isDraggingHandle;
+    public bool IsSelecting => _isDrawing || _isDraggingHandle || _isDraggingBox;
     public bool HasCompletedSelection => _selectionCompleted;
     public IReadOnlyList<PointF> CurrentPoints => _smoothedPoints;
     public Rect CurrentBoundingBox { get; private set; }
@@ -143,7 +153,7 @@ public sealed class SelectionCanvas : FrameworkElement
     {
         _glowPhase = (_glowPhase + 0.03) % 1.0;
 
-        if (_isDrawing || _selectionCompleted || _isDraggingHandle)
+        if (_isDrawing || _selectionCompleted || _isDraggingHandle || _isDraggingBox)
         {
             InvalidateVisual();
         }
@@ -155,6 +165,7 @@ public sealed class SelectionCanvas : FrameworkElement
         _smoothedPoints.Clear();
         _isDrawing = false;
         _isDraggingHandle = false;
+        _isDraggingBox = false;
         _activeHandle = DragHandle.None;
         _selectionCompleted = false;
         CurrentBoundingBox = Rect.Empty;
@@ -164,9 +175,9 @@ public sealed class SelectionCanvas : FrameworkElement
 
     public void HandleMouseDown(Point pos)
     {
-        // 1. If we already have a selection, check if the user clicked on a corner handle to resize it
         if (_selectionCompleted && CurrentBoundingBox != Rect.Empty)
         {
+            // 1. Check if user clicked a corner handle to resize
             var hitHandle = HitTestHandle(pos, CurrentBoundingBox);
             if (hitHandle != DragHandle.None)
             {
@@ -177,11 +188,20 @@ public sealed class SelectionCanvas : FrameworkElement
                 return;
             }
 
-            // 2. If the user clicked outside or inside the handles, seamlessly start a fresh circle (redraw)!
+            // 2. Check if user clicked INSIDE the bounding box to move/drag the entire rectangle
+            if (CurrentBoundingBox.Contains(pos))
+            {
+                _isDraggingBox = true;
+                _dragStartPos = pos;
+                _initialBox = CurrentBoundingBox;
+                return;
+            }
+
+            // 3. User clicked OUTSIDE the bounding box -> seamlessly start a fresh circle (redraw)!
             ResetSelection();
         }
 
-        // 3. Begin new drawing trace
+        // 4. Begin new drawing trace
         _isDrawing = true;
         _selectionCompleted = false;
         _rawPoints.Clear();
@@ -211,7 +231,25 @@ public sealed class SelectionCanvas : FrameworkElement
             return;
         }
 
-        // B. Active drawing of circle or rectangle
+        // B. Moving / dragging the entire bounding box across the screen
+        if (_isDraggingBox)
+        {
+            double dx = pos.X - _dragStartPos.X;
+            double dy = pos.Y - _dragStartPos.Y;
+
+            double screenW = ActualWidth > 0 ? ActualWidth : SystemParameters.VirtualScreenWidth;
+            double screenH = ActualHeight > 0 ? ActualHeight : SystemParameters.VirtualScreenHeight;
+
+            double newX = Math.Max(0, Math.Min(screenW - _initialBox.Width, _initialBox.X + dx));
+            double newY = Math.Max(0, Math.Min(screenH - _initialBox.Height, _initialBox.Y + dy));
+
+            CurrentBoundingBox = new Rect(newX, newY, _initialBox.Width, _initialBox.Height);
+            BoundingBoxChanged?.Invoke(this, CurrentBoundingBox);
+            InvalidateVisual();
+            return;
+        }
+
+        // C. Active drawing of circle or rectangle
         if (_isDrawing)
         {
             if (_currentMode == SelectionMode.Freeform)
@@ -241,8 +279,8 @@ public sealed class SelectionCanvas : FrameworkElement
             return;
         }
 
-        // C. Hover state when selection is completed: update cursor over corner handles
-        if (_selectionCompleted && CurrentBoundingBox != Rect.Empty)
+        // D. Hover cursor updates
+        if (_selectionCompleted && CurrentBoundingBox != Rect.Empty && !_isDrawing && !_isDraggingHandle && !_isDraggingBox)
         {
             var handle = HitTestHandle(pos, CurrentBoundingBox);
             if (handle == DragHandle.TopLeft || handle == DragHandle.BottomRight)
@@ -253,6 +291,11 @@ public sealed class SelectionCanvas : FrameworkElement
             {
                 Cursor = Cursors.SizeNESW;
             }
+            else if (CurrentBoundingBox.Contains(pos))
+            {
+                // Hovering over the inside of the selected area allows moving it anywhere!
+                Cursor = Cursors.SizeAll;
+            }
             else
             {
                 Cursor = Cursors.Cross;
@@ -262,7 +305,7 @@ public sealed class SelectionCanvas : FrameworkElement
 
     public void HandleMouseUp(Point pos)
     {
-        // A. Finished dragging corner handle
+        // A. Finished resizing corner handle
         if (_isDraggingHandle)
         {
             _isDraggingHandle = false;
@@ -281,10 +324,28 @@ public sealed class SelectionCanvas : FrameworkElement
             return;
         }
 
+        // B. Finished moving entire box
+        if (_isDraggingBox)
+        {
+            _isDraggingBox = false;
+
+            _smoothedPoints = new List<PointF>
+            {
+                new((float)CurrentBoundingBox.Left, (float)CurrentBoundingBox.Top),
+                new((float)CurrentBoundingBox.Right, (float)CurrentBoundingBox.Top),
+                new((float)CurrentBoundingBox.Right, (float)CurrentBoundingBox.Bottom),
+                new((float)CurrentBoundingBox.Left, (float)CurrentBoundingBox.Bottom)
+            };
+
+            SelectionCompleted?.Invoke(this, _smoothedPoints);
+            InvalidateVisual();
+            return;
+        }
+
         if (!_isDrawing) return;
         _isDrawing = false;
 
-        // B. Finished drawing circle
+        // C. Finished drawing circle
         if (_currentMode == SelectionMode.Freeform)
         {
             if (_rawPoints.Count < 4)
@@ -475,7 +536,7 @@ public sealed class SelectionCanvas : FrameworkElement
                            Math.Max(1, Math.Abs(_rectStart.Y - _rectCurrent.Y)))
                 : CurrentBoundingBox;
 
-            // Outer soft glow & border
+            // Outer soft glow & rich aurora border (matching Image 2)
             var rectGeom = new RectangleGeometry(rect, 16, 16);
             dc.DrawGeometry(null, OuterBloomPen, rectGeom);
             dc.DrawGeometry(null, RectBorderPen, rectGeom);
@@ -483,7 +544,7 @@ public sealed class SelectionCanvas : FrameworkElement
             // Corner Accents (viewfinder brackets)
             DrawCornerBrackets(dc, rectGeom.Rect);
 
-            // 4 Corner Drag Handles (Draggable/Resizable)
+            // 4 Corner Drag Handles
             if (_selectionCompleted)
             {
                 DrawCornerHandles(dc, rectGeom.Rect);
@@ -517,7 +578,7 @@ public sealed class SelectionCanvas : FrameworkElement
     private void DrawCornerHandles(DrawingContext dc, Rect r)
     {
         var handleBrush = Brushes.White;
-        var handleBorderPen = new Pen(new SolidColorBrush(Color.FromArgb(220, 0, 212, 255)), 2);
+        var handleBorderPen = new Pen(new SolidColorBrush(Color.FromArgb(230, 0, 240, 255)), 2);
         handleBorderPen.Freeze();
 
         Point[] corners = {
