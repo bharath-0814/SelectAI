@@ -75,7 +75,7 @@ if (-not (Test-Path $uninstallRegPath)) {
 }
 
 Set-ItemProperty -Path $uninstallRegPath -Name "DisplayName" -Value "SelectAI" -Force
-Set-ItemProperty -Path $uninstallRegPath -Name "DisplayVersion" -Value "1.0.0" -Force
+Set-ItemProperty -Path $uninstallRegPath -Name "DisplayVersion" -Value "1.1.0" -Force
 Set-ItemProperty -Path $uninstallRegPath -Name "Publisher" -Value "SelectAI Open Source" -Force
 Set-ItemProperty -Path $uninstallRegPath -Name "DisplayIcon" -Value "$icoPath,0" -Force
 Set-ItemProperty -Path $uninstallRegPath -Name "InstallLocation" -Value $installDir -Force

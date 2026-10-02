@@ -1,10 +1,10 @@
 param()
 
-$sourceDir = "d:\AI  select\dist\SelectAI-SelfContained"
+$sourceDir = "d:\AI  select\dist\SelectAI-Clean"
 $installDir = "$env:LOCALAPPDATA\Programs\SelectAI"
-$downloadPkg = "C:\Users\bhara\Downloads\SelectAI-v1.0.0-win-x64"
-$distZip = "d:\AI  select\dist\SelectAI-v1.0.0-win-x64.zip"
-$userZip = "C:\Users\bhara\Downloads\SelectAI-v1.0.0-win-x64.zip"
+$downloadPkg = "C:\Users\bhara\Downloads\SelectAI-v1.1.0-win-x64"
+$distZip = "d:\AI  select\dist\SelectAI-v1.1.0-win-x64.zip"
+$userZip = "C:\Users\bhara\Downloads\SelectAI-v1.1.0-win-x64.zip"
 
 Write-Host "Stopping any running SelectAI process..."
 Get-Process SelectAI -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue

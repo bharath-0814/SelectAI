@@ -70,6 +70,12 @@ This file serves as a persistent memory and milestone tracker for the SelectAI p
     - Fixed WebView2 script execution: removed the Android mobile User-Agent that was breaking Google desktop scripts and causing blank pages. Used standard desktop Chrome User-Agent with dynamic `overflow-x: hidden` injection for clean vertical presentation.
     - Populated the top search capsule with the extracted OCR query text for seamless multisearch and user refinement.
 
+13. **Official v1.1.0 Release & Verification**
+    - Bumped version to 1.1.0 across `.csproj`, `version.json`, `index.html`, `README.md`, `MainWindow.xaml`, and helper scripts.
+    - Verified compiled binary: FileVersion `1.1.0.0`, ProductVersion `1.1.0`.
+    - Verified clean 2-file distribution package (`SelectAI.exe` + `README.txt`) in `SelectAI-v1.1.0-win-x64.zip` (72 MB).
+    - Deployed v1.1.0 to user Downloads and `%LOCALAPPDATA%\Programs\SelectAI`.
+
 ---
 
 ## 🚀 Current Phase & Present Goals

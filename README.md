@@ -7,7 +7,7 @@
 **SelectAI** is a premium, native Windows 11 desktop utility inspired by Samsung Galaxy Book AI Select and Google's Circle to Search. It allows you to press a global hotkey (`Ctrl + Shift + C`) from anywhere in the operating system, draw or circle anything on your screen with a glowing neon tracer, fine-tune the selection with 4 corner drag handles, and view instant AI search results in a docked split-screen browser panel.
 
 🌐 **Live Showcase & Interactive Demo**: [https://select-ai-bay.vercel.app](https://select-ai-bay.vercel.app)  
-📦 **Download Standalone .zip**: [SelectAI-v1.0.0-win-x64.zip](https://github.com/bharath-0814/SelectAI/releases/download/v1.0.0/SelectAI-v1.0.0-win-x64.zip) *(72 MB)*
+📦 **Download Standalone .zip**: [SelectAI-v1.1.0-win-x64.zip](https://github.com/bharath-0814/SelectAI/releases/download/v1.1.0/SelectAI-v1.1.0-win-x64.zip) *(72 MB)*
 
 ---
 
@@ -173,11 +173,11 @@ You can use Inno Setup with the following script:
 ```iss
 [Setup]
 AppName=SelectAI
-AppVersion=1.0.0
+AppVersion=1.1.0
 DefaultDirName={autopf}\SelectAI
 DefaultGroupName=SelectAI
 OutputDir=.\installer
-OutputBaseFilename=SelectAI_Setup_v1.0.0
+OutputBaseFilename=SelectAI_Setup_v1.1.0
 Compression=lzma
 SolidCompression=yes
 

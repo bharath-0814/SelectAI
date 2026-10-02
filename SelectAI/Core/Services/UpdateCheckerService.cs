@@ -30,7 +30,7 @@ public static class UpdateCheckerService
         get
         {
             var version = Assembly.GetExecutingAssembly().GetName().Version;
-            return version != null ? $"v{version.Major}.{version.Minor}.{version.Build}" : "v1.0.0";
+            return version != null ? $"v{version.Major}.{version.Minor}.{version.Build}" : "v1.1.0";
         }
     }
 
