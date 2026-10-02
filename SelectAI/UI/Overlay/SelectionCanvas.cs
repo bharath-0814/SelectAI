@@ -108,6 +108,7 @@ public sealed class SelectionCanvas : FrameworkElement
 
     public event EventHandler<List<PointF>>? SelectionCompleted;
     public event EventHandler<Rect>? BoundingBoxChanged;
+    public event EventHandler? DrawingStarted;
 
     public SelectAI.Core.Enums.SelectionMode Mode
     {
@@ -173,6 +174,10 @@ public sealed class SelectionCanvas : FrameworkElement
         InvalidateVisual();
     }
 
+    // Potential new drawing tracking
+    private bool _isCheckingDrawGesture = false;
+    private Point _potentialDrawStart;
+
     public void HandleMouseDown(Point pos)
     {
         if (_selectionCompleted && CurrentBoundingBox != Rect.Empty)
@@ -197,11 +202,21 @@ public sealed class SelectionCanvas : FrameworkElement
                 return;
             }
 
-            // 3. User clicked OUTSIDE the bounding box -> seamlessly start a fresh circle (redraw)!
-            ResetSelection();
+            // 3. User clicked OUTSIDE the bounding box.
+            // DO NOT immediately erase the box! A click may just be focusing or accidental.
+            // Wait for mouse movement >= 8px to confirm a fresh drawing gesture.
+            _isCheckingDrawGesture = true;
+            _potentialDrawStart = pos;
+            return;
         }
 
         // 4. Begin new drawing trace
+        StartNewDrawTrace(pos);
+    }
+
+    private void StartNewDrawTrace(Point pos)
+    {
+        DrawingStarted?.Invoke(this, EventArgs.Empty);
         _isDrawing = true;
         _selectionCompleted = false;
         _rawPoints.Clear();
@@ -247,6 +262,24 @@ public sealed class SelectionCanvas : FrameworkElement
             BoundingBoxChanged?.Invoke(this, CurrentBoundingBox);
             InvalidateVisual();
             return;
+        }
+
+        // C. Check if user dragged outside to initiate a fresh drawing trace
+        if (_isCheckingDrawGesture)
+        {
+            double dX = pos.X - _potentialDrawStart.X;
+            double dY = pos.Y - _potentialDrawStart.Y;
+            if (Math.Sqrt(dX * dX + dY * dY) >= 8.0)
+            {
+                _isCheckingDrawGesture = false;
+                ResetSelection();
+                StartNewDrawTrace(_potentialDrawStart);
+                // Continue into _isDrawing below
+            }
+            else
+            {
+                return;
+            }
         }
 
         // C. Active drawing of circle or rectangle
@@ -305,6 +338,13 @@ public sealed class SelectionCanvas : FrameworkElement
 
     public void HandleMouseUp(Point pos)
     {
+        // 0. User clicked outside without dragging -> keep selection intact
+        if (_isCheckingDrawGesture)
+        {
+            _isCheckingDrawGesture = false;
+            return;
+        }
+
         // A. Finished resizing corner handle
         if (_isDraggingHandle)
         {

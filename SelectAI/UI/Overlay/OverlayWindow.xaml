@@ -13,11 +13,8 @@
         Focusable="True"
         Cursor="Cross">
     <Grid x:Name="RootGrid" ClipToBounds="True">
-        <!-- Main Screen Container (Smoothly shifts left when Galaxy AI side panel docks) -->
+        <!-- Main Screen Container -->
         <Grid x:Name="DesktopContainer">
-            <Grid.RenderTransform>
-                <TranslateTransform x:Name="DesktopShiftTransform" X="0" />
-            </Grid.RenderTransform>
 
             <!-- Layer 1: Frozen Desktop Background -->
             <Image x:Name="ImgFrozenBackground" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />

@@ -76,6 +76,13 @@ This file serves as a persistent memory and milestone tracker for the SelectAI p
     - Verified clean 2-file distribution package (`SelectAI.exe` + `README.txt`) in `SelectAI-v1.1.0-win-x64.zip` (72 MB).
     - Deployed v1.1.0 to user Downloads and `%LOCALAPPDATA%\Programs\SelectAI`.
 
+14. **Selection Persistence, Desktop Alignment & Visual Search Fix**
+    - Fixed selection persistence: clicking outside no longer resets bounding box or corner handles; only intentional drag gestures (>8px) trigger re-selection.
+    - Eliminated -120px desktop shift: the entire left screen stays 100% intact, pixel-aligned, and never truncated.
+    - Added `BingSearchService` with native `/images/kblob` visual analysis, providing instant visual recognition without bot blocking or empty result frames.
+    - Resolved WebView2 async initialization race condition and removed `WebContentsForceDark` that was inverting results.
+    - Defaulted engine selector to `[ 🔷 Bing ▾ ]` matching Galaxy Book AI Select, with instant dropdown switching to Google, Brave, Firefox, Edge, and Custom browsers.
+
 ---
 
 ## 🚀 Current Phase & Present Goals

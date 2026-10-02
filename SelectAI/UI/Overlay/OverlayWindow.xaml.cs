@@ -68,6 +68,7 @@ public partial class OverlayWindow : Window
         // Wire selection canvas
         OverlayCanvas.SelectionCompleted += OnSelectionFinished;
         OverlayCanvas.BoundingBoxChanged += (s, box) => PositionToolbar(box);
+        OverlayCanvas.DrawingStarted += (s, e) => Toolbar.Visibility = Visibility.Collapsed;
 
         // Wire window deactivation for fluid app switching and Win+D
         Deactivated += OnWindowDeactivated;
@@ -98,7 +99,7 @@ public partial class OverlayWindow : Window
             else
             {
                 targetUrl = engine == "bing"
-                    ? "https://www.bing.com/visualsearch"
+                    ? await BingSearchService.UploadImageAsync(bytes)
                     : await GoogleLensService.UploadImageAsync(bytes);
             }
 
@@ -208,7 +209,6 @@ public partial class OverlayWindow : Window
     {
         if (e.LeftButton == MouseButtonState.Pressed)
         {
-            Toolbar.Visibility = Visibility.Collapsed;
             OverlayCanvas.HandleMouseDown(e.GetPosition(OverlayCanvas));
         }
     }
@@ -260,10 +260,10 @@ public partial class OverlayWindow : Window
         // Display thumbnail in side panel search capsule matching Image 2
         SearchSidePanel.SetThumbnail(_currentSelection?.CroppedImageSource);
 
-        // Animate desktop shift left and open side panel (Samsung Galaxy AI split-screen)
+        // Open side panel docked on right
         OpenSidePanel();
 
-        // Intelligent Hybrid Search: OCR Text (with Gemini Overview) or Visual Lens
+        // Intelligent Hybrid Search: OCR Text (with Gemini Overview) or Visual Search
         var bytes = ImageHelper.ToPngBytes(cropped);
         _ = Task.Run(async () =>
         {
@@ -283,7 +283,7 @@ public partial class OverlayWindow : Window
             else
             {
                 targetUrl = SearchSidePanel.SelectedEngine == "bing"
-                    ? "https://www.bing.com/visualsearch"
+                    ? await BingSearchService.UploadImageAsync(bytes)
                     : await GoogleLensService.UploadImageAsync(bytes);
             }
 
@@ -331,9 +331,6 @@ public partial class OverlayWindow : Window
     {
         SidePanelContainer.Visibility = Visibility.Visible;
 
-        // Yield modal topmost lock so other apps or taskbar clicks can activate seamlessly
-        Topmost = false;
-
         // Slide in from right (Galaxy AI style)
         var panelAnim = new DoubleAnimation
         {
@@ -343,22 +340,10 @@ public partial class OverlayWindow : Window
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
         SidePanelTranslateTransform.BeginAnimation(TranslateTransform.XProperty, panelAnim);
-
-        // Shift frozen desktop slightly left
-        var shiftAnim = new DoubleAnimation
-        {
-            From = 0,
-            To = -120,
-            Duration = TimeSpan.FromMilliseconds(320),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        DesktopShiftTransform.BeginAnimation(TranslateTransform.XProperty, shiftAnim);
     }
 
     private void ResetTransforms()
     {
-        DesktopShiftTransform.BeginAnimation(TranslateTransform.XProperty, null);
-        DesktopShiftTransform.X = 0;
         SidePanelTranslateTransform.BeginAnimation(TranslateTransform.XProperty, null);
         SidePanelTranslateTransform.X = 450;
         SidePanelContainer.Visibility = Visibility.Collapsed;
