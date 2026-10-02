@@ -234,6 +234,16 @@ public partial class App : System.Windows.Application
                 try { p.Kill(); p.WaitForExit(2000); } catch { }
             }
 
+            // Clean target directory to prevent conflicts with legacy loose DLLs
+            try
+            {
+                foreach (var oldFile in System.IO.Directory.GetFiles(targetDir))
+                {
+                    try { System.IO.File.Delete(oldFile); } catch { }
+                }
+            }
+            catch { }
+
             // Copy all files from current dir to target dir
             string sourceDir = System.IO.Path.GetDirectoryName(currentExe)!;
             foreach (var file in System.IO.Directory.GetFiles(sourceDir, "*", System.IO.SearchOption.AllDirectories))
