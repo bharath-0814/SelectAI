@@ -44,6 +44,8 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
 
+        EnsureSelfInstalled();
+
         WmShowAppMessage = NativeMethods.RegisterWindowMessage(ShowAppWindowMessage);
 
         const string mutexName = "SelectAI_SingleInstance_Mutex_9B87F1C4";
@@ -201,6 +203,78 @@ public partial class App : System.Windows.Application
                 MessageBoxImage.Error);
 
             Shutdown();
+        }
+    }
+
+    private void EnsureSelfInstalled()
+    {
+        string? currentExe = Environment.ProcessPath;
+        if (string.IsNullOrEmpty(currentExe)) return;
+
+        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        string targetDir = System.IO.Path.Combine(localAppData, "Programs", "SelectAI");
+        string targetExe = System.IO.Path.Combine(targetDir, "SelectAI.exe");
+
+        if (currentExe.Equals(targetExe, StringComparison.OrdinalIgnoreCase))
+        {
+            // Already running from installed location
+            return;
+        }
+
+        AppLog.Info($"Installing app from {currentExe} to {targetExe}");
+
+        try
+        {
+            System.IO.Directory.CreateDirectory(targetDir);
+            
+            // Wait for existing process to exit if we are updating
+            var existingProcs = Process.GetProcessesByName("SelectAI").Where(p => p.Id != Environment.ProcessId).ToList();
+            foreach (var p in existingProcs)
+            {
+                try { p.Kill(); p.WaitForExit(2000); } catch { }
+            }
+
+            // Copy all files from current dir to target dir
+            string sourceDir = System.IO.Path.GetDirectoryName(currentExe)!;
+            foreach (var file in System.IO.Directory.GetFiles(sourceDir, "*", System.IO.SearchOption.AllDirectories))
+            {
+                string relPath = file.Substring(sourceDir.Length + 1);
+                string destFile = System.IO.Path.Combine(targetDir, relPath);
+                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(destFile)!);
+                System.IO.File.Copy(file, destFile, true);
+            }
+
+            // Create Shortcuts
+            CreateShortcut(targetExe, Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "SelectAI");
+            string startMenuDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu), "Programs");
+            CreateShortcut(targetExe, startMenuDir, "SelectAI");
+
+            AppLog.Info("Installation complete, restarting from target location.");
+            Process.Start(targetExe);
+            Environment.Exit(0);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Failed to install app", ex);
+        }
+    }
+
+    private void CreateShortcut(string targetPath, string directory, string linkName)
+    {
+        string shortcutPath = System.IO.Path.Combine(directory, linkName + ".lnk");
+        try
+        {
+            string psScript = $"$s=(New-Object -COM WScript.Shell).CreateShortcut('{shortcutPath}');$s.TargetPath='{targetPath}';$s.WorkingDirectory='{System.IO.Path.GetDirectoryName(targetPath)}';$s.Save()";
+            var psi = new ProcessStartInfo("powershell.exe", $"-NoProfile -Command \"{psScript}\"")
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false
+            };
+            Process.Start(psi)?.WaitForExit();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error($"Failed to create shortcut at {shortcutPath}", ex);
         }
     }
 
